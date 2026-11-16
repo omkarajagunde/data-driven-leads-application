@@ -22,6 +22,19 @@
   --zone-central: oklch(82% 0.17 80); --zone-east: oklch(84% 0.19 135); --zone-west: oklch(74% 0.19 350);
   --zone-north: oklch(80% 0.13 220); --zone-south: oklch(70% 0.2 30);
 
+  /* signals and surfaces the components share, so each theme can swap them in one place */
+  --color-accent-text: var(--color-accent);
+  --color-good: oklch(86% 0.16 158); --color-bad: oklch(77% 0.13 22); --color-warn: oklch(90% 0.15 98);
+  --color-good-deep: oklch(68% 0.14 158); --color-bad-deep: oklch(60% 0.17 25); --color-warn-deep: oklch(66% 0.13 75);
+  --color-field-ink: var(--color-accent-ink);
+  --grad-tag: linear-gradient(90deg, var(--color-accent), #ff7a59 55%, #f06fb4);
+  --grad-rank: linear-gradient(90deg, color-mix(in oklab, #a3367f 55%, transparent), color-mix(in oklab, #f99a3e 40%, transparent));
+  --grad-meter: linear-gradient(90deg, #f99a3e, #fde05a);
+  --story-tint: color-mix(in oklab, #5b2a8c 22%, transparent);
+  --map-ground: #070910; --map-nodata: #3a4262;
+  --shadow-pop: 0 30px 80px -30px rgb(0 0 0 / 0.8);
+  --shadow-float: 0 18px 50px -12px rgb(0 0 0 / 0.7);
+
   --font-display: "Anek Latin", ui-sans-serif, system-ui, sans-serif;
   --font-body: "Anek Latin", ui-sans-serif, system-ui, sans-serif;
   --font-outlier: "Red Hat Mono", ui-monospace, monospace;
@@ -29,4 +42,58 @@
   --shadow-card: 0 1px 2px oklch(5% 0.01 255 / 0.5), 0 18px 40px -18px oklch(5% 0.01 255 / 0.8);
   --shadow-glow: 0 0 0 1px oklch(82% 0.17 80 / 0.35), 0 0 60px -12px oklch(82% 0.17 80 / 0.35);
   --tracking-display: -0.03em; --display-weight: 700;
+}
+
+/* ---------------------------------------------------------------- light: day ground, dark ink */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-night: oklch(96.5% 0.008 85); --color-paper: oklch(98.5% 0.005 85); --color-paper-2: oklch(100% 0 0); --color-paper-3: oklch(93.5% 0.01 85);
+  --color-ink: oklch(22% 0.02 255); --color-ink-2: oklch(34% 0.02 255); --color-muted: oklch(48% 0.02 255); --color-rule: oklch(86% 0.012 255);
+  --color-accent: oklch(80% 0.16 78); --color-accent-ink: oklch(20% 0.04 70); --color-accent-soft: oklch(94% 0.05 85); --color-accent-deep: oklch(90% 0.07 82);
+  --color-accent-text: oklch(50% 0.13 62);
+  --color-focus: oklch(50% 0.15 255); --color-field: oklch(100% 0 0);
+  --color-error: oklch(52% 0.2 27); --color-success: oklch(50% 0.14 155);
+  --color-good: oklch(50% 0.14 155); --color-bad: oklch(52% 0.19 27); --color-warn: oklch(55% 0.13 75);
+  --color-good-deep: oklch(66% 0.15 155); --color-bad-deep: oklch(62% 0.2 27); --color-warn-deep: oklch(76% 0.15 80);
+  --grad-tag: linear-gradient(90deg, oklch(62% 0.16 62), #e0513a 55%, #c2357f);
+  --story-tint: color-mix(in oklab, #a77ce0 14%, transparent);
+  --map-ground: #f1efe9; --map-nodata: #c9ccd6;
+  --shadow-card: 0 1px 2px oklch(40% 0.02 255 / 0.12), 0 12px 30px -16px oklch(40% 0.02 255 / 0.3);
+  --shadow-pop: 0 24px 60px -30px rgb(20 30 50 / 0.35);
+  --shadow-float: 0 14px 40px -14px rgb(20 30 50 / 0.3);
+}
+
+/* ---------------------------------------------------------------- classic: the same page, told plainly.
+ * A steady blue in place of marigold, one readable sans, slightly larger type, no glow. */
+:root[data-mode="classic"] {
+  --font-display: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-outlier: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --text-xs: 0.875rem; --text-sm: 0.9375rem; --text-md: 1.0625rem; --text-lg: 1.25rem;
+  --tracking-display: -0.01em; --display-weight: 600;
+  --radius-card: 8px; --radius-entry: 8px; --radius-pill: 6px;
+  --shadow-glow: none;
+  --grad-tag: linear-gradient(90deg, var(--color-accent-text), var(--color-accent-text));
+  --grad-rank: linear-gradient(90deg, color-mix(in oklab, var(--color-accent) 34%, transparent), color-mix(in oklab, var(--color-accent) 18%, transparent));
+  --grad-meter: linear-gradient(90deg, var(--color-accent), var(--color-accent));
+  --story-tint: transparent;
+}
+:root[data-mode="classic"]:not([data-theme="light"]) {
+  --color-night: oklch(17% 0.012 250); --color-paper: oklch(19.5% 0.012 250); --color-paper-2: oklch(23% 0.014 250); --color-paper-3: oklch(28% 0.016 250);
+  --color-ink: oklch(95% 0.005 250); --color-ink-2: oklch(86% 0.008 250); --color-muted: oklch(72% 0.012 250); --color-rule: oklch(34% 0.016 250);
+  --color-accent: oklch(72% 0.1 245); --color-accent-ink: oklch(18% 0.03 250); --color-accent-soft: oklch(30% 0.05 245); --color-accent-deep: oklch(24% 0.04 245);
+  --color-focus: oklch(82% 0.1 245);
+  --color-good: oklch(78% 0.11 155); --color-bad: oklch(74% 0.13 25); --color-warn: oklch(84% 0.11 90);
+  --color-good-deep: oklch(62% 0.11 155); --color-bad-deep: oklch(58% 0.14 25); --color-warn-deep: oklch(66% 0.1 80);
+  --map-ground: #12161d; --map-nodata: #3a4250;
+}
+:root[data-mode="classic"][data-theme="light"] {
+  --color-night: oklch(97% 0.004 250); --color-paper: oklch(99% 0.002 250); --color-paper-3: oklch(94.5% 0.006 250);
+  --color-rule: oklch(87% 0.008 250);
+  --color-accent: oklch(44% 0.13 255); --color-accent-ink: oklch(99% 0 0); --color-accent-soft: oklch(94% 0.03 255); --color-accent-deep: oklch(92% 0.03 255);
+  --color-accent-text: oklch(42% 0.13 255);
+  --color-field-ink: oklch(22% 0.02 255);
+  --color-good: oklch(46% 0.12 155); --color-bad: oklch(50% 0.17 27); --color-warn: oklch(52% 0.11 75);
+  --color-good-deep: oklch(58% 0.12 155); --color-bad-deep: oklch(58% 0.17 27); --color-warn-deep: oklch(70% 0.12 80);
+  --map-ground: #f4f5f7; --map-nodata: #d3d7de;
 }

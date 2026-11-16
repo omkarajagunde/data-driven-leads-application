@@ -1,6 +1,16 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from './api.js';
+  import { prefs } from './prefs.svelte.js';
+
+  // Canvas colours for each theme and style: [r,g,b] for labels, projects, late projects, new filings.
+  const SKY = {
+    'dark-game': { label: [244, 239, 228], dot: [255, 193, 61], late: [255, 107, 107], pulse: [95, 240, 173], glow: true },
+    'light-game': { label: [30, 40, 60], dot: [196, 128, 0], late: [200, 50, 50], pulse: [20, 140, 90], glow: false },
+    'dark-classic': { label: [220, 228, 240], dot: [125, 170, 220], late: [230, 120, 110], pulse: [140, 205, 165], glow: false },
+    'light-classic': { label: [30, 40, 60], dot: [40, 80, 150], late: [190, 60, 50], pulse: [30, 120, 80], glow: false },
+  };
+  const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
   // The hero is the data itself: every registered project glows on a night map, new ones pulse,
   // and the headline cycles through what Subak finds in your pincode.
@@ -69,6 +79,8 @@
 
   // ---------------------------------------------------------------- the constellation
   let frame = 0;
+  let paintOnce = null; // reduced motion draws one still frame; a theme change draws it again
+  $effect(() => { prefs.theme; prefs.mode; paintOnce?.(); });
   function draw(still, sky) {
     const inState = (la, lo) => la > 15 && la < 21 && lo > 72 && lo < 76;
     const pts = sky.points.filter(([la, lo]) => inState(la, lo)).map(([latitude, longitude, late]) => ({ latitude, longitude, late }));
@@ -104,19 +116,20 @@
     let last = 0;
 
     const render = (now) => {
+      const sky = SKY[`${prefs.theme}-${prefs.mode}`];
       ctx.clearRect(0, 0, W, H);
       for (const c of cities) {
         const [x, y] = project(c.lat, c.lng);
         ctx.font = '600 11px "Red Hat Mono", monospace';
-        ctx.fillStyle = 'rgba(244,239,228,0.28)';
+        ctx.fillStyle = rgba(sky.label, 0.28);
         ctx.fillText(c.name, x + 14, y - 12);
       }
-      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalCompositeOperation = sky.glow ? 'lighter' : 'source-over';
       for (const d of placed) {
         const [x, y] = project(d.p.latitude, d.p.longitude);
         const a = still ? 0.5 : 0.32 + 0.28 * Math.sin(now / 1000 * d.sp + d.tw);
         const late = d.p.late === 1;
-        ctx.fillStyle = late ? `rgba(255,107,107,${a})` : `rgba(255,193,61,${a})`;
+        ctx.fillStyle = rgba(late ? sky.late : sky.dot, sky.glow ? a : a + 0.25);
         ctx.beginPath(); ctx.arc(x, y, 1.3, 0, Math.PI * 2); ctx.fill();
       }
       ctx.globalCompositeOperation = 'source-over';
@@ -130,14 +143,14 @@
           const age = (now - pl.born) / 2400;
           if (age > 1) continue;
           const [x, y] = project(pl.d.p.latitude, pl.d.p.longitude);
-          ctx.strokeStyle = `rgba(95,240,173,${0.8 * (1 - age)})`;
+          ctx.strokeStyle = rgba(sky.pulse, 0.8 * (1 - age));
           ctx.lineWidth = 1.5;
           ctx.beginPath(); ctx.arc(x, y, 4 + age * 26, 0, Math.PI * 2); ctx.stroke();
-          ctx.fillStyle = `rgba(95,240,173,${1 - age})`;
+          ctx.fillStyle = rgba(sky.pulse, 1 - age);
           ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2); ctx.fill();
           if (age < 0.85 && W > 600) {
             ctx.font = '500 11px "Anek Latin", sans-serif';
-            ctx.fillStyle = `rgba(244,239,228,${0.85 * (1 - age)})`;
+            ctx.fillStyle = rgba(sky.label, 0.85 * (1 - age));
             ctx.fillText(`${(pl.d.p.name ?? '').slice(0, 24)} · ${pl.d.p.pincode}`, x + 10, y - 8 - age * 10);
           }
         }
@@ -145,6 +158,7 @@
       }
     };
     frame = requestAnimationFrame(render);
+    if (still) paintOnce = () => requestAnimationFrame(render);
   }
 </script>
 

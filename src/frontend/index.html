@@ -6,9 +6,20 @@
     <title>Subak: market insights for your local business</title>
     <meta name="description" content="Consultant-grade market insights in plain numbers for your area, from public RERA filings. For home buyers, agents, material suppliers, architects and interior designers." />
     <link rel="icon" href="data:," />
+    <script>
+      // The display choices, applied before the first paint so the page does not flash the other theme.
+      (function () {
+        var d = document.documentElement, pick = function (k, ok) {
+          try { var v = localStorage.getItem('subak.' + k); if (ok.indexOf(v) >= 0) return v; } catch (e) {}
+          return ok[0];
+        };
+        d.dataset.theme = pick('theme', ['dark', 'light']);
+        d.dataset.mode = pick('mode', ['game', 'classic']);
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@400;500;600;700;800&family=Red+Hat+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=Red+Hat+Mono:wght@400;500&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="app"></div>

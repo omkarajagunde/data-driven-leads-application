@@ -3,6 +3,7 @@
   import { api } from './api.js';
   import { num } from './format.js';
   import InsightCard from './InsightCard.svelte';
+  import { prefs } from './prefs.svelte.js';
 
   // Four levels; the zoom decides which one is showing, and each answers its own question.
   const LEVELS = [
@@ -18,10 +19,50 @@
     { id: 'momentum', name: 'Momentum', hint: 'Price change, last quarter' },
     { id: 'supply', name: 'Supply', hint: 'Unsold flats' },
   ];
-  const RAMP = ['#2a1d5c', '#5b2a8c', '#a3367f', '#e0575a', '#f99a3e', '#fde05a'];
-  const ZONE_COLOUR = { central: '#f5b301', east: '#5fd38a', west: '#f06fb4', north: '#59c8f2', south: '#ff7a59' };
-  const SCHEDULE_COLOUR = { on_time: '#3ddc97', early: '#3ddc97', completed: '#6aa8ff', late: '#ff5b5b', overdue: '#ff5b5b' };
-  const STYLE = 'https://tiles.openfreemap.org/styles/dark';
+  // One palette per theme and style. The map is rebuilt when either switch changes.
+  const DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark', LIGHT_STYLE = 'https://tiles.openfreemap.org/styles/positron';
+  const GAME_ZONES = { central: '#f5b301', east: '#5fd38a', west: '#f06fb4', north: '#59c8f2', south: '#ff7a59' };
+  const PALETTES = {
+    'dark-game': {
+      style: DARK_STYLE, ground: '#070910', water: '#0a1424', labels: 0.5, glow: true,
+      ramp: ['#2a1d5c', '#5b2a8c', '#a3367f', '#e0575a', '#f99a3e', '#fde05a'], none: '#3a4262', zoneNone: '#2a2f45', regionNone: '#59607a',
+      zones: GAME_ZONES, schedule: { on_time: '#3ddc97', early: '#3ddc97', completed: '#6aa8ff', late: '#ff5b5b', overdue: '#ff5b5b' },
+      podium: '#2c3350', crown: '#f4efe4', hover: '#ffffff', stroke: 'rgba(255,255,255,0.6)', dotEdge: '#070910', street: '#ff8a8a',
+      buildings: ['#1c2236', '#28304f', '#36426c', '#4a5a94'], light: '#dfe6ff',
+      pill: { bg: 'rgba(10,12,20,0.92)', edge: 'rgba(255,255,255,0.18)', l1: '#f4efe4', l2: '#ffc93d', up: '#3ddc97', down: '#ff6b6b' },
+    },
+    'light-game': {
+      style: LIGHT_STYLE, ground: '#f1efe9', water: '#cfe0ee', labels: 0.75, glow: false,
+      ramp: ['#3b2a7a', '#6b3a9c', '#b2438a', '#e0575a', '#f29436', '#f2c230'], none: '#c9ccd6', zoneNone: '#d9dbe2', regionNone: '#a4a9b8',
+      zones: { central: '#d99a00', east: '#2f9e5c', west: '#c83d86', north: '#2b8fc4', south: '#e0603c' },
+      schedule: { on_time: '#1f9e66', early: '#1f9e66', completed: '#3a73d6', late: '#d93a3a', overdue: '#d93a3a' },
+      podium: '#c9cdd8', crown: '#ffffff', hover: '#1a2233', stroke: 'rgba(20,30,50,0.55)', dotEdge: '#ffffff', street: '#d94a4a',
+      buildings: ['#e6e3dc', '#dcd9d2', '#cfd0d4', '#bfc4cf'], light: '#ffffff',
+      pill: { bg: 'rgba(255,255,255,0.95)', edge: 'rgba(20,30,50,0.18)', l1: '#1b2233', l2: '#9a5b00', up: '#178a57', down: '#c43434' },
+    },
+    'dark-classic': {
+      style: DARK_STYLE, ground: '#12161d', water: '#16202c', labels: 0.65, glow: false,
+      ramp: ['#1f3550', '#28507a', '#3570a3', '#4f91c6', '#7db3df', '#b9d7f0'], none: '#3a4250', zoneNone: '#262c36', regionNone: '#566070',
+      zones: { central: '#c9b26b', east: '#7fb89a', west: '#b892b8', north: '#7fa8c9', south: '#c99a7f' },
+      schedule: { on_time: '#5fb58a', early: '#5fb58a', completed: '#7fa8d9', late: '#d9776c', overdue: '#d9776c' },
+      podium: '#2a313d', crown: '#d7e2ee', hover: '#ffffff', stroke: 'rgba(255,255,255,0.5)', dotEdge: '#12161d', street: '#d9776c',
+      buildings: ['#1d232d', '#262e3a', '#313b4a', '#3e4a5d'], light: '#e6ecf5',
+      pill: { bg: 'rgba(24,29,38,0.95)', edge: 'rgba(255,255,255,0.14)', l1: '#eef2f7', l2: '#b9d7f0', up: '#7fcfa2', down: '#e8968c' },
+    },
+    'light-classic': {
+      style: LIGHT_STYLE, ground: '#f4f5f7', water: '#d6e3ef', labels: 0.8, glow: false,
+      ramp: ['#d6e4f2', '#a9c4e0', '#6f9bc8', '#3f72ab', '#1f4e8c', '#0d2f5e'], none: '#d3d7de', zoneNone: '#e3e6eb', regionNone: '#a7aebb',
+      zones: { central: '#8a7432', east: '#3d7f5c', west: '#7d4f7d', north: '#2f6690', south: '#9a5a3c' },
+      schedule: { on_time: '#2e8b57', early: '#2e8b57', completed: '#2f6db5', late: '#c0392b', overdue: '#c0392b' },
+      podium: '#cfd5de', crown: '#ffffff', hover: '#0d2f5e', stroke: 'rgba(20,30,50,0.5)', dotEdge: '#ffffff', street: '#c0392b',
+      buildings: ['#e8eaee', '#dde1e7', '#cfd5de', '#bec6d2'], light: '#ffffff',
+      pill: { bg: 'rgba(255,255,255,0.96)', edge: 'rgba(20,30,50,0.2)', l1: '#1b2233', l2: '#1f4e8c', up: '#2e7d4f', down: '#b23a2e' },
+    },
+  };
+  const P = $derived(PALETTES[`${prefs.theme}-${prefs.mode}`]);
+  let C = PALETTES['dark-game']; // the palette the current map was built with
+  const classic = $derived(prefs.mode === 'classic');
+  const PLAIN_NAMES = { region: 'City overview', zone: 'Zones', pincode: 'Pincodes', project: 'Projects' };
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
   const PLURAL = { region: 'regions', zone: 'zones', pincode: 'pincodes', project: 'projects' };
 
@@ -67,6 +108,8 @@
   onDestroy(() => { cancelAnimationFrame(orbit); map?.remove(); });
 
   $effect(() => { if (mapEl && !map) start(); });
+  // A new theme or style needs a new basemap and new layer colours: rebuild the map, keep the camera.
+  $effect(() => { if (P !== C && map && ready) rebuild(); });
   $effect(() => { metric; currency; if (ready) paint(); });
 
   function track() {
@@ -154,7 +197,7 @@
           l1: (d.name ?? '').length > 26 ? `${d.name.slice(0, 25)}…` : d.name,
           l2: priceOf(d) ? `${priceOf(d)}/sqft` : d.units_total ? `${num(d.units_total)} flats` : '',
           l3: '', up: 1,
-          colour: SCHEDULE_COLOUR[d.schedule] ?? '#9aa3b5', units: d.units_total ?? 0,
+          colour: C.schedule[d.schedule] ?? '#9aa3b5', units: d.units_total ?? 0,
         });
       } else {
         Object.assign(props, {
@@ -162,7 +205,7 @@
           l1: kind === 'region' ? d.name : kind === 'zone' ? `${regionName(d.region_id)} · ${d.name}` : `${d.id}${d.area ? ` ${d.area}` : ''}`,
           l2: d.projects ? [priceOf(d), kind === 'region' ? `· ${num(d.projects)} projects` : ''].filter(Boolean).join(' ') : 'Coming soon',
           l3: d.projects ? changeOf(d) : '', up: (d.trend?.price_qoq_pct ?? 0) >= 0 ? 1 : 0,
-          zone: ZONE_COLOUR[d.zone_id] ?? '#f5b301',
+          zone: C.zones[d.zone_id] ?? C.zones.central,
         });
         if (kind === 'region') {
           // the nearest other region decides which side this pill takes on a phone
@@ -273,13 +316,12 @@
   }));
   // Every loaded outline, for the thin borders (pincodes without projects included).
   const outlines = () => fc((data?.pincodes ?? []).filter((p) => p.boundary).map((p) => ({
-    type: 'Feature', properties: { id: p.id, zone: ZONE_COLOUR[p.zone_id] ?? '#f5b301', projects: p.projects }, geometry: p.boundary,
+    type: 'Feature', properties: { id: p.id, zone: C.zones[p.zone_id] ?? C.zones.central, projects: p.projects }, geometry: p.boundary,
   })));
-  const rampExpr = (fallback, ramp = RAMP) => ['case', ['<', ['get', 't'], 0], fallback,
+  const rampExpr = (fallback, ramp = C.ramp) => ['case', ['<', ['get', 't'], 0], fallback,
     ['interpolate', ['linear'], ['get', 't'], ...ramp.flatMap((c, i) => [i / (ramp.length - 1), c])]];
   // The same ramp mixed toward white, for the lit tops of the towers.
   const mix = (hex, k) => `#${[1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * (1 - k) + 255 * k).toString(16).padStart(2, '0')).join('')}`;
-  const RAMP_LIT = RAMP.map((c) => mix(c, 0.35));
 
   // ---------------------------------------------------------------- map
   function pillImage() {
@@ -287,8 +329,8 @@
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
     const g = c.getContext('2d');
-    g.fillStyle = 'rgba(10,12,20,0.92)';
-    g.strokeStyle = 'rgba(255,255,255,0.18)';
+    g.fillStyle = C.pill.bg;
+    g.strokeStyle = C.pill.edge;
     g.lineWidth = s;
     g.beginPath(); g.roundRect(s / 2, s / 2, w - s, h - s, r); g.fill(); g.stroke();
     return { img: g.getImageData(0, 0, w, h), opts: { pixelRatio: s, stretchX: [[r, w - r]], stretchY: [[r, h - r]], content: [r, r * 0.6, w - r, h - r * 0.6] } };
@@ -301,8 +343,9 @@
     canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
     const small = window.matchMedia('(max-width: 60rem)');
     narrow = small.matches;
-    small.addEventListener('change', (e) => (narrow = e.matches));
-    map = new maplibre.Map({ container: mapEl, style: STYLE, center: [75.2, 16.8], zoom: 5.2, maxPitch: 70, attributionControl: { compact: true } });
+    if (!watching) { watching = true; small.addEventListener('change', (e) => (narrow = e.matches)); }
+    C = P;
+    map = new maplibre.Map({ container: mapEl, style: C.style, center: [75.2, 16.8], zoom: 5.2, maxPitch: 70, attributionControl: { compact: true } });
     lock(true);
     map.addControl(new maplibre.NavigationControl({ visualizePitch: true }), 'bottom-left');
     try {
@@ -322,29 +365,42 @@
     map.on('dragstart', stopOrbit);
     ready = true;
     track();
-    go(stage, false);
+    if (camera) { lock(!free); map.jumpTo(camera); camera = null; loadProjects(); }
+    else go(stage, false);
+  }
+
+  let watching = false, camera = null;
+  function rebuild() {
+    camera = { center: map.getCenter(), zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() };
+    stopOrbit(); stopSteer();
+    hoverKey = null; hovered = null;
+    fetchedViews.clear();
+    ready = false;
+    map.remove();
+    map = null;
+    start();
   }
 
   // Quieter basemap so the data glows: night ground, dimmer labels, 3D buildings at street level.
   function tune() {
     for (const l of map.getStyle().layers) {
-      if (l.type === 'background') map.setPaintProperty(l.id, 'background-color', '#070910');
-      if (l.type === 'symbol' && l.layout?.['text-field']) map.setPaintProperty(l.id, 'text-opacity', 0.5);
-      if (l.type === 'fill' && l['source-layer'] === 'water') map.setPaintProperty(l.id, 'fill-color', '#0a1424');
+      if (l.type === 'background') map.setPaintProperty(l.id, 'background-color', C.ground);
+      if (l.type === 'symbol' && l.layout?.['text-field']) map.setPaintProperty(l.id, 'text-opacity', C.labels);
+      if (l.type === 'fill' && l['source-layer'] === 'water') map.setPaintProperty(l.id, 'fill-color', C.water);
     }
     const firstLabel = map.getStyle().layers.find((l) => l.type === 'symbol')?.id;
     // The real city around the projects: taller buildings catch a little more light.
     map.addLayer({
       id: 'buildings-3d', type: 'fill-extrusion', source: 'openmaptiles', 'source-layer': 'building', minzoom: 13.6,
       paint: {
-        'fill-extrusion-color': ['interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 8], 0, '#1c2236', 20, '#28304f', 60, '#36426c', 150, '#4a5a94'],
+        'fill-extrusion-color': ['interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 8], 0, C.buildings[0], 20, C.buildings[1], 60, C.buildings[2], 150, C.buildings[3]],
         'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 13.6, 0, 14.6, ['coalesce', ['get', 'render_height'], 8]],
         'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
         'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 13.6, 0, 14.6, 0.85],
         'fill-extrusion-vertical-gradient': true,
       },
     }, firstLabel);
-    map.setLight({ anchor: 'map', position: [1.4, 210, 35], color: '#dfe6ff', intensity: 0.45 });
+    map.setLight({ anchor: 'map', position: [1.4, 210, 35], color: C.light, intensity: 0.45 });
     const { img, opts } = pillImage();
     map.addImage('pill', img, opts);
   }
@@ -366,19 +422,19 @@
     const lit = (on, off) => ['case', ['boolean', ['feature-state', 'hover'], false], on, off];
 
     // regions: glowing bubbles
-    map.addLayer({ id: 'region-glow', type: 'circle', source: 'regions', maxzoom: BREAKS[0] + 0.5, paint: {
-      'circle-radius': ['+', 20, ['*', 1.8, ['sqrt', ['get', 'projects']]]], 'circle-color': rampExpr('#59607a'),
+    if (C.glow) map.addLayer({ id: 'region-glow', type: 'circle', source: 'regions', maxzoom: BREAKS[0] + 0.5, paint: {
+      'circle-radius': ['+', 20, ['*', 1.8, ['sqrt', ['get', 'projects']]]], 'circle-color': rampExpr(C.regionNone),
       'circle-blur': 1, 'circle-opacity': fade(0, BREAKS[0], 0.6) } });
     map.addLayer({ id: 'region-dot', type: 'circle', source: 'regions', maxzoom: BREAKS[0] + 0.5, paint: {
-      'circle-radius': ['+', 7, ['*', 0.55, ['sqrt', ['get', 'projects']]]], 'circle-color': rampExpr('#59607a'),
-      'circle-stroke-color': lit('#ffffff', 'rgba(255,255,255,0.6)'), 'circle-stroke-width': lit(3, 1.5),
+      'circle-radius': ['+', 7, ['*', 0.55, ['sqrt', ['get', 'projects']]]], 'circle-color': rampExpr(C.regionNone),
+      'circle-stroke-color': lit(C.hover, C.stroke), 'circle-stroke-width': lit(3, 1.5),
       'circle-opacity': fade(0, BREAKS[0]), 'circle-stroke-opacity': fade(0, BREAKS[0]) } });
 
     // zones: heat-filled areas with their own coloured edge
     map.addLayer({ id: 'zone-fill', type: 'fill', source: 'zones', minzoom: BREAKS[0] - 0.5, maxzoom: BREAKS[2], paint: {
-      'fill-color': rampExpr('#2a2f45'),
+      'fill-color': rampExpr(C.zoneNone),
       'fill-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[0] - 0.5, 0, BREAKS[0], 0.42, BREAKS[1], 0.42, BREAKS[1] + 0.6, 0.12, BREAKS[2], 0] } });
-    map.addLayer({ id: 'zone-edge-glow', type: 'line', source: 'zones', minzoom: BREAKS[0] - 0.5, maxzoom: BREAKS[2], paint: {
+    if (C.glow) map.addLayer({ id: 'zone-edge-glow', type: 'line', source: 'zones', minzoom: BREAKS[0] - 0.5, maxzoom: BREAKS[2], paint: {
       'line-color': ['get', 'zone'], 'line-width': 10, 'line-blur': 9, 'line-opacity': fade(BREAKS[0], BREAKS[1], 0.45) } });
     map.addLayer({ id: 'zone-edge', type: 'line', source: 'zones', minzoom: BREAKS[0] - 0.5, maxzoom: BREAKS[2], paint: {
       'line-color': ['get', 'zone'], 'line-width': lit(4, 2), 'line-opacity': fade(BREAKS[0], BREAKS[1] + 0.8, 0.95) } });
@@ -386,10 +442,10 @@
     // pincodes: a lit plot of ground, and on it a skyline. Height = flats offered, colour = chosen metric.
     const rise = (prop, from, to) => ['interpolate', ['linear'], ['zoom'], from, 0, to, ['get', prop]];
     map.addLayer({ id: 'plot-fill', type: 'fill', source: 'plots', minzoom: BREAKS[1] - 0.8, maxzoom: BREAKS[2] + 0.8, paint: {
-      'fill-color': rampExpr('#3a4262'),
+      'fill-color': rampExpr(C.none),
       'fill-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[1] - 0.8, 0, BREAKS[1], 0.14, BREAKS[2], 0.14, BREAKS[2] + 0.7, 0] } });
     map.addLayer({ id: 'columns', type: 'fill-extrusion', source: 'columns', minzoom: BREAKS[1] - 0.8, maxzoom: BREAKS[2] + 0.8, paint: {
-      'fill-extrusion-color': lit('#ffffff', ['match', ['get', 'tier'], 'podium', '#2c3350', 'crown', rampExpr('#5a6386', RAMP_LIT), rampExpr('#3a4262')]),
+      'fill-extrusion-color': lit(C.hover, ['match', ['get', 'tier'], 'podium', C.podium, 'crown', rampExpr(C.none, C.ramp.map((c) => mix(c, 0.35))), rampExpr(C.none)]),
       'fill-extrusion-height': rise('top', BREAKS[1] - 0.8, BREAKS[1]),
       'fill-extrusion-base': rise('base', BREAKS[1] - 0.8, BREAKS[1]),
       'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2], 0.95, BREAKS[2] + 0.7, 0],
@@ -397,7 +453,7 @@
 
     // projects: one building each, coloured by schedule, rising as the skylines fade
     map.addLayer({ id: 'project-towers', type: 'fill-extrusion', source: 'project-towers', minzoom: BREAKS[2] - 0.6, paint: {
-      'fill-extrusion-color': lit('#ffffff', ['match', ['get', 'tier'], 'podium', '#2e3550', 'crown', '#f4efe4', ['get', 'colour']]),
+      'fill-extrusion-color': lit(C.hover, ['match', ['get', 'tier'], 'podium', C.podium, 'crown', C.crown, ['get', 'colour']]),
       'fill-extrusion-height': rise('top', BREAKS[2] - 0.6, BREAKS[2] + 0.4),
       'fill-extrusion-base': rise('base', BREAKS[2] - 0.6, BREAKS[2] + 0.4),
       'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2] - 0.6, 0, BREAKS[2], 0.92],
@@ -408,19 +464,19 @@
     map.addLayer({ id: 'outline-line', type: 'line', source: 'outlines', minzoom: BREAKS[1] - 0.6, maxzoom: BREAKS[2] + 0.6, paint: {
       'line-color': ['get', 'zone'], 'line-width': 1.2,
       'line-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[1] - 0.6, 0, BREAKS[1], 0.55, BREAKS[2], 0.55, BREAKS[2] + 0.6, 0] } });
-    map.addLayer({ id: 'outline-street-glow', type: 'line', source: 'outlines', minzoom: BREAKS[2], paint: {
+    if (C.glow) map.addLayer({ id: 'outline-street-glow', type: 'line', source: 'outlines', minzoom: BREAKS[2], paint: {
       'line-color': '#ff6b6b', 'line-width': 8, 'line-blur': 6,
       'line-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2], 0, BREAKS[2] + 0.6, 0.25] } });
     map.addLayer({ id: 'outline-street', type: 'line', source: 'outlines', minzoom: BREAKS[2], layout: { 'line-cap': 'round' }, paint: {
-      'line-color': '#ff8a8a', 'line-width': 2.2, 'line-dasharray': [0.6, 1.6],
+      'line-color': C.street, 'line-width': 2.2, 'line-dasharray': [0.6, 1.6],
       'line-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2], 0, BREAKS[2] + 0.6, 0.9] } });
 
-    map.addLayer({ id: 'project-glow', type: 'circle', source: 'projects', minzoom: BREAKS[2] - 1, paint: {
+    if (C.glow) map.addLayer({ id: 'project-glow', type: 'circle', source: 'projects', minzoom: BREAKS[2] - 1, paint: {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 5, 14, 14, 16, 26], 'circle-color': ['get', 'colour'], 'circle-pitch-alignment': 'map',
       'circle-blur': 1, 'circle-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2] - 1, 0, BREAKS[2], 0.55] } });
     map.addLayer({ id: 'project-dot', type: 'circle', source: 'projects', minzoom: BREAKS[2] - 1, paint: {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 2.5, 14, 4, 16, 3],
-      'circle-color': ['get', 'colour'], 'circle-stroke-color': lit('#ffffff', '#070910'), 'circle-stroke-width': lit(3, 1.2),
+      'circle-color': ['get', 'colour'], 'circle-stroke-color': lit(C.hover, C.dotEdge), 'circle-stroke-width': lit(3, 1.2),
       'circle-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2] - 1, 0, BREAKS[2], 1],
       'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2] - 1, 0, BREAKS[2], 1] } });
 
@@ -431,11 +487,11 @@
         'icon-image': 'pill', 'icon-text-fit': 'both', 'icon-text-fit-padding': [4, 8, 4, 8],
         'text-font': ['Noto Sans Bold'], 'text-size': size, 'text-line-height': 1.3, 'text-max-width': 30,
         // a pill with nothing to say on its second line stays one line tall
-        'text-field': ['case', ['==', ['get', 'l2'], ''], ['format', ['get', 'l1'], { 'text-color': '#f4efe4' }],
+        'text-field': ['case', ['==', ['get', 'l2'], ''], ['format', ['get', 'l1'], { 'text-color': C.pill.l1 }],
           ['format',
-            ['get', 'l1'], { 'text-color': '#f4efe4' }, '\n', {},
-            ['get', 'l2'], { 'font-scale': 0.92, 'text-font': ['literal', ['Noto Sans Regular']], 'text-color': '#ffc93d' }, ' ', {},
-            ['get', 'l3'], { 'font-scale': 0.92, 'text-color': ['case', ['==', ['get', 'up'], 1], '#3ddc97', '#ff6b6b'] }]],
+            ['get', 'l1'], { 'text-color': C.pill.l1 }, '\n', {},
+            ['get', 'l2'], { 'font-scale': 0.92, 'text-font': ['literal', ['Noto Sans Regular']], 'text-color': C.pill.l2 }, ' ', {},
+            ['get', 'l3'], { 'font-scale': 0.92, 'text-color': ['case', ['==', ['get', 'up'], 1], C.pill.up, C.pill.down] }]],
         'symbol-sort-key': ['-', 0, ['coalesce', ['get', 'units'], 0]],
         ...extra,
       },
@@ -696,8 +752,8 @@
 
     <div class="quest__panel">
       <div class="quest__head">
-        <p class="quest__level num">Level {level + 1} of {LEVELS.length}</p>
-        <h2>{LEVELS[level].name}</h2>
+        <p class="quest__level num">{classic ? 'Step' : 'Level'} {level + 1} of {LEVELS.length}</p>
+        <h2>{classic ? PLAIN_NAMES[LEVELS[level].id] : LEVELS[level].name}</h2>
       </div>
       <div class="track" aria-hidden="true">
         {#each LEVELS as l, i (l.id)}
@@ -705,7 +761,7 @@
         {/each}
       </div>
       <p class="quest__line">{LEVELS[level].line}</p>
-      <ul class="unlocks" aria-label="Unlocked so far">
+      <ul class="unlocks" aria-label={classic ? 'Shown at this step' : 'Unlocked so far'}>
         {#each LEVELS.slice(0, level + 1) as l (l.id)}
           {#each l.unlocks as u (u)}
             <li class="chip chip--unlock">{u}</li>
@@ -735,16 +791,16 @@
           {/each}
         </div>
         <div class="mapkey__scale">
-          <span class="mapkey__ramp" style:background="linear-gradient(90deg, {RAMP.join(', ')})"></span>
+          <span class="mapkey__ramp" style:background="linear-gradient(90deg, {P.ramp.join(', ')})"></span>
           <span class="mapkey__ends num"><span>{scale.lo}</span><span>{METRICS.find((x) => x.id === metric).hint}</span><span>{scale.hi}</span></span>
         </div>
         <p class="mapkey__none"><i></i>No {metric === 'supply' ? 'unit data' : 'price filed'} yet</p>
         {#if level === 1 && data?.zones.some((z) => z.boundary_estimated)}<p class="mapkey__note">Zone shapes are estimated from pincode centres.</p>{/if}
       {:else}
         <ul class="mapkey__dots">
-          <li><i style:background={SCHEDULE_COLOUR.on_time}></i>On time</li>
-          <li><i style:background={SCHEDULE_COLOUR.late}></i>Late</li>
-          <li><i style:background={SCHEDULE_COLOUR.completed}></i>Completed</li>
+          <li><i style:background={P.schedule.on_time}></i>On time</li>
+          <li><i style:background={P.schedule.late}></i>Late</li>
+          <li><i style:background={P.schedule.completed}></i>Completed</li>
         </ul>
       {/if}
       <p class="mapkey__zoom num">zoom {zoom.toFixed(1)}</p>
