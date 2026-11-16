@@ -160,6 +160,11 @@ h1, h2, h3 { line-height: 1.02; }
 .map .maplibregl-ctrl-attrib { background: color-mix(in oklab, var(--color-night) 75%, transparent); color: var(--color-muted); font-size: 0.6875rem; }
 .map .maplibregl-ctrl-attrib a { color: var(--color-ink-2); }
 .map .maplibregl-ctrl-attrib-button { filter: invert(1); }
+/* camera pad: turn and tilt without a right mouse button */
+.campad { position: absolute; z-index: 3; left: calc(10px + 40px + var(--space-sm)); bottom: 10px; display: flex; gap: 2px; padding: 3px; border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-pill); background: color-mix(in oklab, var(--color-night) 82%, transparent); backdrop-filter: blur(10px); }
+.campad__btn { min-width: 40px; height: 40px; padding: 0 var(--space-xs); border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-ink); font-size: 1.25rem; line-height: 1; font-weight: 600; cursor: pointer; touch-action: none; user-select: none; transition: background-color var(--dur-micro) var(--ease-out); }
+.campad__btn:hover, .campad__btn:active { background: var(--color-paper-2); }
+.campad__mode { color: var(--color-accent); font-size: var(--text-sm); }
 
 /* the map key: what colour means, and the metric switch */
 .mapkey { position: absolute; z-index: 3; top: calc(var(--space-3xl) + var(--space-lg)); right: var(--gutter); display: grid; gap: var(--space-xs); width: min(19rem, 40vw); padding: var(--space-sm); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-card); background: color-mix(in oklab, var(--color-night) 82%, transparent); backdrop-filter: blur(10px); font-size: var(--text-xs); }
@@ -411,6 +416,7 @@ h1, h2, h3 { line-height: 1.02; }
   .insight.is-compact .meter, .insight.is-compact .insight__foot { display: none; }
   .spark svg { height: 38px; }
   .map .maplibregl-ctrl-bottom-right { bottom: 150px; }
+  .campad { left: auto; right: var(--space-sm); bottom: auto; top: 50%; transform: translateY(-50%); flex-direction: column; }
 }
 @media (max-width: 60rem) {
   .story__stage { grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-md); padding-block: calc(var(--space-3xl) + var(--space-sm)) var(--space-md); }

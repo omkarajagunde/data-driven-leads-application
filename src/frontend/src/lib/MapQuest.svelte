@@ -637,7 +637,44 @@
     free = on;
     stopOrbit();
     lock(!on);
-    if (!on) go(stage);
+    if (!on) { stopSteer(); go(stage); return; }
+    // the tour starts flat at the top level; exploring should feel 3D straight away
+    if (map && map.getPitch() < 25) map.easeTo({ pitch: 55, bearing: map.getBearing() - 20, duration: 900 });
+  }
+
+  // ---------------------------------------------------------------- camera pad
+  // Hold a button to keep turning or tilting; a quick tap (or Enter) moves one step.
+  // Mouse users can also right-drag or Ctrl-drag; this is for trackpads and phones.
+  const STEER = { left: [-1, 0], right: [1, 0], up: [0, 1], down: [0, -1] };
+  let steering = 0, steerFrom = 0;
+  function startSteer(dir, e) {
+    if (!map) return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    stopOrbit(); stopSteer();
+    const [db, dp] = STEER[dir];
+    let last = performance.now();
+    steerFrom = last;
+    const step = (now) => {
+      const dt = Math.min(48, now - last); last = now;
+      map.jumpTo({ bearing: map.getBearing() + db * dt * 0.08, pitch: clamp(map.getPitch() + dp * dt * 0.045, 0, 70) });
+      steering = requestAnimationFrame(step);
+    };
+    steering = requestAnimationFrame(step);
+  }
+  function endSteer(dir) {
+    const quick = steering && performance.now() - steerFrom < 180;
+    stopSteer();
+    if (quick) nudge(dir);
+  }
+  function stopSteer() { cancelAnimationFrame(steering); steering = 0; }
+  function nudge(dir) {
+    const [db, dp] = STEER[dir];
+    map?.easeTo({ bearing: map.getBearing() + db * 30, pitch: clamp(map.getPitch() + dp * 15, 0, 70), duration: 400 });
+  }
+  let pitched = $state(false);
+  $effect(() => { if (ready) { const on = () => (pitched = map.getPitch() > 5); map.on('pitch', on); on(); } });
+  function flat() {
+    map?.easeTo(pitched ? { pitch: 0, bearing: 0, duration: 700 } : { pitch: 55, bearing: map.getBearing() - 20, duration: 700 });
   }
 
   // Beside the pointer, flipped to whichever side has room.
@@ -685,7 +722,7 @@
         </div>
       </div>
       <p class="quest__hint">
-        {#if free}Drag, zoom, right-drag to tilt. Click to dive in.{:else if stage < 3}Keep scrolling to go deeper.{:else}Street level. Try “Explore freely”.{/if}
+        {#if free}Drag to move. Turn and tilt with the buttons, or right-drag. Click to dive in.{:else if stage < 3}Keep scrolling to go deeper.{:else}Street level. Try “Explore freely”.{/if}
       </p>
       {#if failed}<p class="quest__error" role="status">{failed}</p>{/if}
     </div>
@@ -712,6 +749,18 @@
       {/if}
       <p class="mapkey__zoom num">zoom {zoom.toFixed(1)}</p>
     </div>
+
+    {#if free}
+      <div class="campad" role="group" aria-label="Camera">
+        {#each [['left', '⟲', 'Turn left'], ['up', '▲', 'Tilt more'], ['down', '▼', 'Tilt less'], ['right', '⟳', 'Turn right']] as [dir, icon, label] (dir)}
+          <button type="button" class="campad__btn" aria-label={label} title={label}
+            onpointerdown={(e) => startSteer(dir, e)} onpointerup={() => endSteer(dir)}
+            onpointercancel={stopSteer} onlostpointercapture={stopSteer}
+            onclick={(e) => { if (e.detail === 0) nudge(dir); }}>{icon}</button>
+        {/each}
+        <button type="button" class="campad__btn campad__mode" aria-pressed={!pitched} onclick={flat}>{pitched ? '2D' : '3D'}</button>
+      </div>
+    {/if}
 
     {#if hovered}
       <div class="quest__card is-hover" style={cardStyle} bind:clientHeight={cardH}>
