@@ -2,7 +2,7 @@
 
 `start_run` launches one actor run on Apify's servers and records it in ingest_runs with
 status 'started'. Nothing waits: the laptop can sleep. Each run gets a hard spend cap
-(enforced by Apify) and a 48-hour time limit, and its dataset is given a name so Apify keeps it
+(enforced by Apify) and a 72-hour time limit, and its dataset is given a name so Apify keeps it
 until it is deleted instead of expiring with the plan's retention period.
 
 `collect` looks at every started run. A finished run is downloaded page by page into
@@ -21,7 +21,7 @@ import env
 
 RAW_DIR = db.ROOT / "data" / "raw"
 PAGE = 500  # dataset items per download request
-RUN_TIMEOUT = timedelta(hours=48)
+RUN_TIMEOUT = timedelta(hours=72)  # gentle request rates make a full scan take a day or more
 FINISHED = {"SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT", "TIMED_OUT"}
 
 
@@ -138,11 +138,17 @@ def load_file(con, path, loader) -> tuple[int, int, int]:
     return n, saved, units
 
 
-def collect(con, loaders: dict) -> None:
+def collect(con, loaders: dict, only: list[int] | None = None, quiet: bool = False) -> None:
+    """Collect every finished run (or only the ingest_runs ids in `only`). `quiet` skips the
+    progress lines for runs that are still going."""
     con = db.alive(con)
     rows = con.execute("""SELECT run_id, step, apify_actor, apify_run_id, apify_dataset_id, dataset_name, started_at
-                          FROM ingest_runs WHERE status IN ('started', 'downloaded') ORDER BY run_id""").fetchall()
+                          FROM ingest_runs WHERE status IN ('started', 'downloaded')
+                            AND (%s::bigint[] IS NULL OR run_id = ANY(%s::bigint[]))
+                          ORDER BY run_id""", (only, only)).fetchall()
     if not rows:
+        if quiet:
+            return
         print("no runs waiting to be collected")
         return
     api = client()
@@ -154,6 +160,8 @@ def collect(con, loaders: dict) -> None:
         cost = run.get("usageTotalUsd")
         if status not in FINISHED:
             waiting += 1
+            if quiet:
+                continue
             ds = as_dict(api.dataset(r["apify_dataset_id"]).get())
             age = datetime.now(r["started_at"].tzinfo) - r["started_at"]
             print(f"{r['dataset_name']}: {status}, {ds.get('itemCount', 0):,} items so far, "
@@ -174,5 +182,5 @@ def collect(con, loaders: dict) -> None:
                     (n, saved, units, cost, note, r["run_id"]))
         con.commit()
         print(f"  {total:,} items downloaded; {saved:,} projects and {units:,} apartment rows loaded")
-    if waiting:
+    if waiting and not quiet:
         print(f"{waiting} run(s) still running; run `collect` again later")

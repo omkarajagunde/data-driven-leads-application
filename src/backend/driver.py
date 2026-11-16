@@ -277,7 +277,7 @@ def cmd_start(con, a):
     db.init_schema(con)
     db.sync_regions(con)
     detail = {"includeDetails": True, "includeComplaints": True, "includeUnits": True,
-              "maxConcurrency": a.concurrency, "maxRequestsPerMinute": a.rpm}
+              "maxConcurrency": a.concurrency, "maxRequestsPerMinute": a.rpm, "minRequestIntervalMs": a.gap_ms}
 
     if a.mode in ("full", "test"):
         actor, region_ids = in_use_regions(con, a.regions or (["pune-city"] if a.mode == "test" else None))
@@ -340,6 +340,75 @@ def cmd_start(con, a):
     print("Started. Close the laptop if you like; run `driver.py collect` later.")
 
 
+PAGE_URL = "https://maharerait.maharashtra.gov.in/public/project/view/{}"
+MAX_START_URLS = 1000  # actor limit per run
+
+
+def cmd_pages(con, a):
+    """Read registry project pages directly, in batches, a few runs at a time.
+
+    The registry's list pages (which a scan needs first) can be too slow for the actor's early stop;
+    project pages are not. Each batch is one run over 1,000 consecutive registry ids, newest first,
+    kept only for our districts. Batches already collected are skipped, so a re-run resumes.
+    This command stays running (start it with `caffeinate` on a Mac) until every batch is done."""
+    import time
+    db.init_schema(con)
+    db.sync_regions(con)
+    actor, region_ids = in_use_regions(con, a.regions)
+    names = districts(con, region_ids)
+    hi = a.to_id or registry_top(con)
+    batches = [(max(a.from_id, top - a.batch + 1), top) for top in range(hi, a.from_id - 1, -a.batch)]
+    detail = {"includeDetails": True, "includeComplaints": True, "includeUnits": True,
+              "maxConcurrency": a.concurrency, "maxRequestsPerMinute": a.rpm}
+    if a.gap_ms:
+        detail["minRequestIntervalMs"] = a.gap_ms
+    name = lambda lo, top: f"subak-pages-{lo}-{top}"  # noqa: E731 - stable, so a re-run recognises its batches
+    done = {r["dataset_name"]: r for r in con.execute(
+        "SELECT dataset_name, status, rows_upserted, cost_usd FROM ingest_runs WHERE dataset_name LIKE 'subak-pages-%'")}
+    todo = [(lo, top) for lo, top in batches
+            if not (done.get(name(lo, top)) and done[name(lo, top)]["status"] in ("collected", "started", "downloaded"))]
+    spent = sum(float(r["cost_usd"] or 0) for r in done.values())
+    stamp_ = lambda: datetime.now().strftime("%H:%M")  # noqa: E731
+    print(f"{actor}: pages {a.from_id}-{hi} for {', '.join(names)}: {len(batches)} batches, "
+          f"{len(batches) - len(todo)} already done, {len(todo)} to go; cap ${a.max_cost:.2f} (${spent:.2f} already spent)")
+
+    # Pick up batches started by an earlier invocation that are still running.
+    running = {r["run_id"]: r["dataset_name"] for r in con.execute(
+        "SELECT run_id, dataset_name FROM ingest_runs WHERE dataset_name LIKE 'subak-pages-%' AND status IN ('started','downloaded')")}
+    api = runs.client()
+    per_batch = round(a.batch * 0.00106 + 0.02, 2)  # every page kept with full details, the worst case
+    while todo or running:
+        # Collect whatever has finished.
+        if running:
+            runs.collect(con, LOADERS, only=list(running), quiet=True)
+            con = db.alive(con)
+            for r in con.execute("SELECT run_id, dataset_name, rows_upserted, cost_usd, notes FROM ingest_runs "
+                                 "WHERE run_id = ANY(%s) AND status = 'collected'", (list(running),)):
+                spent += float(r["cost_usd"] or 0)
+                print(f"[{stamp_()}] {r['dataset_name']}: {r['rows_upserted']} projects, ${float(r['cost_usd'] or 0):.2f}"
+                      f"{' (' + r['notes'] + ')' if r['notes'] else ''}; total spent ${spent:.2f}", flush=True)
+                running.pop(r["run_id"])
+        # Start new batches while there is room and money.
+        live = sum(float(runs.as_dict(api.run(r["apify_run_id"]).get()).get("usageTotalUsd") or 0)
+                   for r in con.execute("SELECT apify_run_id FROM ingest_runs WHERE run_id = ANY(%s)", (list(running) or [0],)))
+        while todo and len(running) < a.parallel:
+            if spent + live + per_batch > a.max_cost:
+                print(f"[{stamp_()}] spend cap: ${spent + live:.2f} spent or committed, next batch could cost "
+                      f"${per_batch:.2f}; {len(todo)} batches left unstarted", flush=True)
+                todo = []
+                break
+            lo, top = todo.pop(0)
+            run_input = {**BASE_INPUT, **detail, "locations": names, "maxItems": 0,
+                         "startUrls": [{"url": PAGE_URL.format(i)} for i in range(top, lo - 1, -1)]}
+            started = runs.start_run(con, actor, run_input, "pages", name(lo, top), per_batch)
+            running[started["run_id"]] = name(lo, top)
+            live += per_batch
+        if todo or running:
+            time.sleep(a.poll)
+    print(f"[{stamp_()}] all batches finished; total spent ${spent:.2f}")
+    cmd_status(db.alive(con), a)
+
+
 def cmd_collect(con, a):
     db.init_schema(con)
     db.sync_regions(con)
@@ -398,13 +467,13 @@ def main():
     f.add_argument("--refresh", action="store_true", help="re-fetch details for projects that already have them")
     f.add_argument("--max-cost", type=float, default=5.0, help="USD spend cap for this command")
     f.add_argument("--wait", type=int, default=3600, help="seconds to wait for each run")
-    f.add_argument("--concurrency", type=int, default=8)
-    f.add_argument("--rpm", type=int, default=600)
+    f.add_argument("--concurrency", type=int, default=2)   # gentle on the government site
+    f.add_argument("--rpm", type=int, default=60)
     st = sub.add_parser("start", help="launch Apify runs and return at once")
     st.add_argument("mode", choices=["test", "full", "delta"])
     st.add_argument("--regions", nargs="+", metavar="REGION_ID",
                     help="default: every region whose actor is in-use (test: pune-city)")
-    st.add_argument("--parallel", type=int, default=4, help="full: registry slices run at the same time")
+    st.add_argument("--parallel", type=int, default=2, help="full: registry slices run at the same time")
     st.add_argument("--slices", nargs="+", type=int, metavar="N",
                     help="full: start only these slices (1-based), e.g. to re-run one the registry cut short")
     st.add_argument("--max-cost", type=float, help="USD cap for all runs together, split evenly between them "
@@ -412,8 +481,22 @@ def main():
     st.add_argument("--test-files", type=int, default=2000, help="test: how many of the newest registry files to read")
     st.add_argument("--include-closed", action="store_true",
                     help="delta: check completed / lapsed projects instead (quarterly)")
-    st.add_argument("--concurrency", type=int, default=4, help="requests in parallel per run (the registry is slow)")
-    st.add_argument("--rpm", type=int, default=300, help="requests per minute per run")
+    # Gentle by default: MahaRERA is a public government site. 2 runs x 60 a minute is about two
+    # requests a second in total, roughly one person clicking through it.
+    st.add_argument("--concurrency", type=int, default=2, help="requests in parallel per run")
+    st.add_argument("--rpm", type=int, default=60, help="requests per minute per run")
+    st.add_argument("--gap-ms", type=int, default=500, help="smallest gap between two requests of one run")
+    pg = sub.add_parser("pages", help="read registry project pages directly, in batches (stays running)")
+    pg.add_argument("--regions", nargs="+", metavar="REGION_ID", help="default: every region whose actor is in-use")
+    pg.add_argument("--from-id", type=int, required=True, help="lowest registry id to read")
+    pg.add_argument("--to-id", type=int, help="highest registry id (default: the newest seen)")
+    pg.add_argument("--batch", type=int, default=MAX_START_URLS, help="registry ids per run (max 1000)")
+    pg.add_argument("--parallel", type=int, default=2, help="runs at the same time")
+    pg.add_argument("--max-cost", type=float, default=20.0, help="USD cap for all batches together")
+    pg.add_argument("--concurrency", type=int, default=4, help="requests in parallel per run")
+    pg.add_argument("--rpm", type=int, default=300, help="requests per minute per run")
+    pg.add_argument("--gap-ms", type=int, default=0, help="smallest gap between two requests of one run")
+    pg.add_argument("--poll", type=int, default=60, help="seconds between checks")
     sub.add_parser("collect", help="download and load every finished run")
     sub.add_parser("runs", help="list fire-and-forget runs")
     a = p.parse_args()
@@ -421,7 +504,7 @@ def main():
         a.max_cost = {"test": 3.0, "full": 65.0, "delta": 15.0}[a.mode]
     with db.connect() as con:
         {"init": cmd_init, "load": cmd_load, "fetch": cmd_fetch, "status": cmd_status,
-         "start": cmd_start, "collect": cmd_collect, "runs": cmd_runs}[a.cmd](con, a)
+         "start": cmd_start, "collect": cmd_collect, "runs": cmd_runs, "pages": cmd_pages}[a.cmd](con, a)
 
 
 if __name__ == "__main__":
