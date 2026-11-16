@@ -79,6 +79,16 @@ def sync_regions(con, path: Path = REGIONS_FILE) -> dict:
                         (p["code"], r["id"], z["id"], d["id"], d["name"], Jsonb(p.get("areas") or []),
                          p.get("latitude"), p.get("longitude")),
                     )
+    # Guard: a config edited by mistake (a region dropped, an empty list) must not quietly remove
+    # pincodes, because their real outlines go with them. Removing a few is normal upkeep; removing
+    # many needs SYNC_ALLOW_PRUNE=1. Nothing has been committed yet, so stopping here changes nothing.
+    gone = con.execute("SELECT pincode FROM pincodes WHERE NOT (pincode = ANY(%s))", (list(seen_pins),)).fetchall()
+    have = con.execute("SELECT count(*) AS n FROM pincodes").fetchone()["n"]
+    if gone and (not seen_pins or len(gone) > max(5, have // 10)) and os.environ.get("SYNC_ALLOW_PRUNE") != "1":
+        con.rollback()
+        raise SystemExit(
+            f"{path.name} would remove {len(gone)} of {have} pincodes (and their outlines), e.g. "
+            f"{', '.join(r['pincode'] for r in gone[:8])}. If that is intended, run again with SYNC_ALLOW_PRUNE=1.")
     con.execute("DELETE FROM pincodes WHERE NOT (pincode = ANY(%s))", (list(seen_pins),))
     con.execute("DELETE FROM zones WHERE NOT ((region_id || '/' || zone_id) = ANY(%s))",
                 ([f"{a}/{b}" for a, b in seen_zones],))
