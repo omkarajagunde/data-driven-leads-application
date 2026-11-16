@@ -90,6 +90,14 @@ docker compose -f docker-compose.prod.yml exec app python src/backend/driver.py 
 `FRONTEND_API_KEY` and `APIFY_TOKEN`. Load data from your laptop with `DATABASE_URL` set to
 the Postgres public URL, or with `railway ssh`.
 
+To copy your local data to Railway, turn on Postgres → Settings → Networking → TCP Proxy, then:
+
+```bash
+TARGET_DATABASE_URL="$(railway variables -s Postgres --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["DATABASE_PUBLIC_URL"])')" deploy/push_data.sh
+```
+
+It replaces only the data tables; the waitlist and API keys on Railway are left alone.
+
 `FRONTEND_API_KEY` is any long random string (`python3 -c "import secrets; print(secrets.token_urlsafe(32))"`).
 
 ## Database
