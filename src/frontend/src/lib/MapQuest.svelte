@@ -180,23 +180,106 @@
   }
 
   const zoneCentres = () => fc(features('zone').map((f, i) => ({ ...f, geometry: { type: 'Point', coordinates: [data.zones[i].longitude, data.zones[i].latitude] } })));
-  // Each pincode is raised from its real postal outline when one is loaded, otherwise from a small hexagon.
-  // Outlines cover far more ground than a hexagon, so they rise less for the same number of flats.
-  const columns = () => fc(features('pincode').filter((f) => f.properties.projects).map((f) => {
-    const outline = byId.get(`pincode:${f.properties.id}`)?.boundary;
-    const units = f.properties.units ?? 0;
-    return {
-      ...f,
-      properties: { ...f.properties, h: outline ? 60 + 14 * Math.sqrt(units) : 120 + 38 * Math.sqrt(units) },
-      geometry: outline ?? { type: 'Polygon', coordinates: [circle(...f.geometry.coordinates, 520, 6)] },
+
+  // ---------------------------------------------------------------- skylines
+  // The same id always gives the same random numbers, so a pincode's skyline does not reshuffle on repaint.
+  function seeded(seed) {
+    let h = 2166136261;
+    for (const ch of String(seed)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    return () => {
+      h = (h + 0x6d2b79f5) | 0;
+      let t = Math.imul(h ^ (h >>> 15), 1 | h);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
+  }
+
+  function inside([x, y], geom) {
+    const polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.type === 'MultiPolygon' ? geom.coordinates : [];
+    const inRing = (ring) => {
+      let hit = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [xi, yi] = ring[i], [xj, yj] = ring[j];
+        if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+      }
+      return hit;
+    };
+    return polys.some(([outer, ...holes]) => inRing(outer) && !holes.some(inRing));
+  }
+
+  // A footprint `half` metres from centre to side: a rotated square, or a round tower.
+  function footprint(lng, lat, half, angle, round) {
+    const dLat = 1 / 111320, dLng = 1 / (111320 * Math.cos((lat * Math.PI) / 180));
+    const sides = round ? 14 : 4, r = round ? half : half * Math.SQRT2, out = [];
+    for (let i = 0; i <= sides; i++) {
+      const a = angle + (round ? 0 : Math.PI / 4) + (i / sides) * Math.PI * 2;
+      out.push([lng + Math.cos(a) * r * dLng, lat + Math.sin(a) * r * dLat]);
+    }
+    return [out];
+  }
+
+  // One building: a wide podium, the tower, a set-back crown, and on the tallest a spire.
+  function building(props, lng, lat, half, top, angle, round, spire) {
+    const podium = top * 0.14;
+    const tiers = [
+      { tier: 'podium', half: half * 1.4, base: 0, top: podium },
+      { tier: 'shaft', half, base: podium, top: top * 0.88 },
+      { tier: 'crown', half: half * 0.68, base: top * 0.88, top },
+    ];
+    if (spire) tiers.push({ tier: 'crown', half: half * 0.14, base: top, top: top * 1.14 });
+    return tiers.map((t) => ({
+      type: 'Feature',
+      properties: { ...props, tier: t.tier, base: t.base, top: t.top },
+      geometry: { type: 'Polygon', coordinates: footprint(lng, lat, t.half, angle, round) },
+    }));
+  }
+
+  // Each pincode becomes a small downtown: tallest tower in the middle, more towers for more projects,
+  // the whole cluster as tall as the flats on offer. Towers stay inside the real postal outline.
+  const skylines = () => fc(features('pincode').filter((f) => f.properties.projects).flatMap((f) => {
+    const outline = byId.get(`pincode:${f.properties.id}`)?.boundary;
+    const [cx, cy] = f.geometry.coordinates;
+    const rand = seeded(f.properties.id);
+    const units = f.properties.units ?? 0, H = 260 + 46 * Math.sqrt(units);
+    const n = clamp(Math.round(2 + Math.sqrt(f.properties.projects) * 1.3), 3, 14);
+    const R = 520 + 230 * Math.sqrt(n), grid = rand() * Math.PI / 2;
+    const dLat = 1 / 111320, dLng = 1 / (111320 * Math.cos((cy * Math.PI) / 180));
+    const out = [];
+    for (let i = 0; i < n; i++) {
+      let dist = i === 0 ? 0 : R * Math.sqrt(i / n) * (0.85 + 0.3 * rand());
+      const a = i * 2.39996 + rand() * 0.6;
+      let p = [cx + Math.cos(a) * dist * dLng, cy + Math.sin(a) * dist * dLat];
+      for (let k = 0; outline && k < 4 && !inside(p, outline); k++) {
+        dist /= 2;
+        p = [cx + Math.cos(a) * dist * dLng, cy + Math.sin(a) * dist * dLat];
+      }
+      const falloff = 1 - 0.45 * (dist / R);
+      const top = i === 0 ? H : H * falloff * (0.35 + 0.55 * rand());
+      const half = (i === 0 ? 170 : 95 + 80 * rand()) * (0.8 + 0.4 * Math.min(1, n / 8));
+      out.push(...building(f.properties, ...p, half, top, grid + (rand() - 0.5) * 0.15, rand() < 0.22, i === 0));
+    }
+    return out;
+  }));
+
+  // The ground each skyline stands on: the postal outline, or a hexagon where none is loaded.
+  const plots = () => fc(features('pincode').filter((f) => f.properties.projects).map((f) => ({
+    ...f, geometry: byId.get(`pincode:${f.properties.id}`)?.boundary ?? { type: 'Polygon', coordinates: [circle(...f.geometry.coordinates, 900, 6)] },
+  })));
+
+  // Each project as one building: footprint and height grow with its flats.
+  const towers = () => fc(features('project').flatMap((f) => {
+    const rand = seeded(f.properties.id), u = Math.sqrt(f.properties.units || 20);
+    return building(f.properties, ...f.geometry.coordinates, 18 + 1.6 * u, 40 + 9 * u, rand() * Math.PI / 2, rand() < 0.2, u > 18);
   }));
   // Every loaded outline, for the thin borders (pincodes without projects included).
   const outlines = () => fc((data?.pincodes ?? []).filter((p) => p.boundary).map((p) => ({
     type: 'Feature', properties: { id: p.id, zone: ZONE_COLOUR[p.zone_id] ?? '#f5b301', projects: p.projects }, geometry: p.boundary,
   })));
-  const rampExpr = (fallback) => ['case', ['<', ['get', 't'], 0], fallback,
-    ['interpolate', ['linear'], ['get', 't'], ...RAMP.flatMap((c, i) => [i / (RAMP.length - 1), c])]];
+  const rampExpr = (fallback, ramp = RAMP) => ['case', ['<', ['get', 't'], 0], fallback,
+    ['interpolate', ['linear'], ['get', 't'], ...ramp.flatMap((c, i) => [i / (ramp.length - 1), c])]];
+  // The same ramp mixed toward white, for the lit tops of the towers.
+  const mix = (hex, k) => `#${[1, 3, 5].map((i) => Math.round(parseInt(hex.slice(i, i + 2), 16) * (1 - k) + 255 * k).toString(16).padStart(2, '0')).join('')}`;
+  const RAMP_LIT = RAMP.map((c) => mix(c, 0.35));
 
   // ---------------------------------------------------------------- map
   function pillImage() {
@@ -250,15 +333,18 @@
       if (l.type === 'fill' && l['source-layer'] === 'water') map.setPaintProperty(l.id, 'fill-color', '#0a1424');
     }
     const firstLabel = map.getStyle().layers.find((l) => l.type === 'symbol')?.id;
+    // The real city around the projects: taller buildings catch a little more light.
     map.addLayer({
-      id: 'buildings-3d', type: 'fill-extrusion', source: 'openmaptiles', 'source-layer': 'building', minzoom: 14,
+      id: 'buildings-3d', type: 'fill-extrusion', source: 'openmaptiles', 'source-layer': 'building', minzoom: 13.6,
       paint: {
-        'fill-extrusion-color': '#1b2236',
-        'fill-extrusion-height': ['coalesce', ['get', 'render_height'], 8],
+        'fill-extrusion-color': ['interpolate', ['linear'], ['coalesce', ['get', 'render_height'], 8], 0, '#1c2236', 20, '#28304f', 60, '#36426c', 150, '#4a5a94'],
+        'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 13.6, 0, 14.6, ['coalesce', ['get', 'render_height'], 8]],
         'fill-extrusion-base': ['coalesce', ['get', 'render_min_height'], 0],
-        'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 14, 0, 15, 0.8],
+        'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], 13.6, 0, 14.6, 0.85],
+        'fill-extrusion-vertical-gradient': true,
       },
     }, firstLabel);
+    map.setLight({ anchor: 'map', position: [1.4, 210, 35], color: '#dfe6ff', intensity: 0.45 });
     const { img, opts } = pillImage();
     map.addImage('pill', img, opts);
   }
@@ -268,7 +354,9 @@
     map.addSource('zones', { type: 'geojson', data: fc(features('zone')), promoteId: 'id' });
     map.addSource('zone-centres', { type: 'geojson', data: zoneCentres(), promoteId: 'id' });
     map.addSource('pins', { type: 'geojson', data: fc(features('pincode')), promoteId: 'id' });
-    map.addSource('columns', { type: 'geojson', data: columns(), promoteId: 'id' });
+    map.addSource('columns', { type: 'geojson', data: skylines(), promoteId: 'id' });
+    map.addSource('plots', { type: 'geojson', data: plots(), promoteId: 'id' });
+    map.addSource('project-towers', { type: 'geojson', data: towers(), promoteId: 'id' });
     map.addSource('outlines', { type: 'geojson', data: outlines(), promoteId: 'id' });
     map.addSource('projects', { type: 'geojson', data: fc(features('project')), promoteId: 'id' });
 
@@ -295,11 +383,24 @@
     map.addLayer({ id: 'zone-edge', type: 'line', source: 'zones', minzoom: BREAKS[0] - 0.5, maxzoom: BREAKS[2], paint: {
       'line-color': ['get', 'zone'], 'line-width': lit(4, 2), 'line-opacity': fade(BREAKS[0], BREAKS[1] + 0.8, 0.95) } });
 
-    // pincodes: 3D columns, height = flats offered, colour = chosen metric
+    // pincodes: a lit plot of ground, and on it a skyline. Height = flats offered, colour = chosen metric.
+    const rise = (prop, from, to) => ['interpolate', ['linear'], ['zoom'], from, 0, to, ['get', prop]];
+    map.addLayer({ id: 'plot-fill', type: 'fill', source: 'plots', minzoom: BREAKS[1] - 0.8, maxzoom: BREAKS[2] + 0.8, paint: {
+      'fill-color': rampExpr('#3a4262'),
+      'fill-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[1] - 0.8, 0, BREAKS[1], 0.14, BREAKS[2], 0.14, BREAKS[2] + 0.7, 0] } });
     map.addLayer({ id: 'columns', type: 'fill-extrusion', source: 'columns', minzoom: BREAKS[1] - 0.8, maxzoom: BREAKS[2] + 0.8, paint: {
-      'fill-extrusion-color': lit('#ffffff', rampExpr('#3a4262')),
-      'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], BREAKS[1] - 0.8, 0, BREAKS[1], ['get', 'h']],
-      'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2], 0.9, BREAKS[2] + 0.7, 0],
+      'fill-extrusion-color': lit('#ffffff', ['match', ['get', 'tier'], 'podium', '#2c3350', 'crown', rampExpr('#5a6386', RAMP_LIT), rampExpr('#3a4262')]),
+      'fill-extrusion-height': rise('top', BREAKS[1] - 0.8, BREAKS[1]),
+      'fill-extrusion-base': rise('base', BREAKS[1] - 0.8, BREAKS[1]),
+      'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2], 0.95, BREAKS[2] + 0.7, 0],
+      'fill-extrusion-vertical-gradient': true } });
+
+    // projects: one building each, coloured by schedule, rising as the skylines fade
+    map.addLayer({ id: 'project-towers', type: 'fill-extrusion', source: 'project-towers', minzoom: BREAKS[2] - 0.6, paint: {
+      'fill-extrusion-color': lit('#ffffff', ['match', ['get', 'tier'], 'podium', '#2e3550', 'crown', '#f4efe4', ['get', 'colour']]),
+      'fill-extrusion-height': rise('top', BREAKS[2] - 0.6, BREAKS[2] + 0.4),
+      'fill-extrusion-base': rise('base', BREAKS[2] - 0.6, BREAKS[2] + 0.4),
+      'fill-extrusion-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2] - 0.6, 0, BREAKS[2], 0.92],
       'fill-extrusion-vertical-gradient': true } });
 
     // projects: glowing points coloured by schedule
@@ -315,10 +416,10 @@
       'line-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2], 0, BREAKS[2] + 0.6, 0.9] } });
 
     map.addLayer({ id: 'project-glow', type: 'circle', source: 'projects', minzoom: BREAKS[2] - 1, paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 5, 16, 20], 'circle-color': ['get', 'colour'],
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 5, 14, 14, 16, 26], 'circle-color': ['get', 'colour'], 'circle-pitch-alignment': 'map',
       'circle-blur': 1, 'circle-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2] - 1, 0, BREAKS[2], 0.55] } });
     map.addLayer({ id: 'project-dot', type: 'circle', source: 'projects', minzoom: BREAKS[2] - 1, paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 2.5, 16, ['+', 5, ['*', 0.35, ['sqrt', ['get', 'units']]]]],
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 12.5, 2.5, 14, 4, 16, 3],
       'circle-color': ['get', 'colour'], 'circle-stroke-color': lit('#ffffff', '#070910'), 'circle-stroke-width': lit(3, 1.2),
       'circle-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2] - 1, 0, BREAKS[2], 1],
       'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'], BREAKS[2] - 1, 0, BREAKS[2], 1] } });
@@ -348,10 +449,11 @@
       'text-variable-anchor': ['top', 'bottom', 'left', 'right', 'top-left', 'bottom-right'], 'text-radial-offset': 2.2, 'text-justify': 'auto' });
     pill('zone-label', 'zone-centres', BREAKS[0] - 0.2, BREAKS[1] + 0.3, 13);
     pill('pin-label', 'pins', BREAKS[1], BREAKS[2] + 0.4, 12, { 'text-offset': [0, -1.4], 'text-anchor': 'bottom' });
-    pill('project-label', 'projects', BREAKS[2] + 0.3, 24, 12, { 'text-offset': [0, -1.1], 'text-anchor': 'bottom' });
+    // below the building, so the pill never hides the tower it names
+    pill('project-label', 'projects', BREAKS[2] + 0.3, 24, 12, { 'text-offset': [0, 1.2], 'text-anchor': 'top' });
     map.setFilter('pin-label', ['>', ['get', 'projects'], 0]);
 
-    const hoverable = { 'region-dot': 'regions', 'zone-fill': 'zones', columns: 'columns', 'project-dot': 'projects' };
+    const hoverable = { 'region-dot': 'regions', 'zone-fill': 'zones', columns: 'columns', 'project-towers': 'projects', 'project-dot': 'projects' };
     for (const [layer, source] of Object.entries(hoverable)) {
       map.on('mousemove', layer, (e) => {
         if (!canHover || levelOf(map.getZoom()) !== levelOfLayer(layer)) return;
@@ -382,7 +484,7 @@
       });
     }
   }
-  const levelOfLayer = (layer) => ({ 'region-dot': 0, 'zone-fill': 1, columns: 2, 'project-dot': 3 })[layer];
+  const levelOfLayer = (layer) => ({ 'region-dot': 0, 'zone-fill': 1, columns: 2, 'project-towers': 3, 'project-dot': 3 })[layer];
 
   // Overlapping zones: the smallest one under the pointer is the one meant.
   function pickTop(list, layer) {
@@ -392,10 +494,12 @@
     return [...list].sort((a, b) => size(a) - size(b))[0];
   }
 
+  // A project is drawn twice (its building and its dot), so both light up together.
+  const TWIN = { projects: 'project-towers' };
   function setHover(source, id) {
-    if (hoverKey) map.setFeatureState(hoverKey, { hover: false });
-    hoverKey = source ? { source, id } : null;
-    if (hoverKey) map.setFeatureState(hoverKey, { hover: true });
+    for (const k of hoverKey ?? []) map.setFeatureState(k, { hover: false });
+    hoverKey = source ? [source, TWIN[source]].filter(Boolean).map((s) => ({ source: s, id })) : null;
+    for (const k of hoverKey ?? []) map.setFeatureState(k, { hover: true });
   }
 
   function recordOf(kind, id) {
@@ -413,7 +517,9 @@
     map.getSource('zones')?.setData(fc(features('zone')));
     map.getSource('zone-centres')?.setData(zoneCentres());
     map.getSource('pins')?.setData(fc(features('pincode')));
-    map.getSource('columns')?.setData(columns());
+    map.getSource('columns')?.setData(skylines());
+    map.getSource('plots')?.setData(plots());
+    map.getSource('project-towers')?.setData(towers());
     map.getSource('outlines')?.setData(outlines());
     map.getSource('projects')?.setData(fc(features('project')));
   }
@@ -441,6 +547,7 @@
       data.projects = [...all.values()].slice(-KEEP);
       for (const p of data.projects) byId.set(`project:${p.id}`, p);
       map.getSource('projects')?.setData(fc(features('project')));
+      map.getSource('project-towers')?.setData(towers());
       if (!picked) settle(true); // the orbit may already be turning; the new projects still need a card
     } catch (e) {
       fetchedViews.delete(key);
