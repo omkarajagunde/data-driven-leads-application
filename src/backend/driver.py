@@ -291,6 +291,17 @@ def cmd_start(con, a):
             # Registry-id slices; the newest is open-ended so files registered during the run are not missed.
             size = math.ceil(top / a.parallel)
             slices = [(i * size + 1, (i + 1) * size if i < a.parallel - 1 else None) for i in range(a.parallel)]
+            if a.slices:  # re-run only some slices (e.g. one the registry cut short); same split, same share of the cap
+                bad = [n for n in a.slices if not 1 <= n <= a.parallel]
+                if bad:
+                    sys.exit(f"--slices must be between 1 and {a.parallel}")
+                share = a.max_cost / a.parallel
+                for n in a.slices:
+                    lo, hi = slices[n - 1]
+                    run_input = {**base, "projectIdFrom": lo, **({"projectIdTo": hi} if hi else {})}
+                    runs.start_run(con, actor, run_input, "full-scan", f"subak-full-{stamp()}-s{n}", share)
+                print("Started. Close the laptop if you like; run `driver.py collect` later.")
+                return
         print(f"{actor}: {a.mode} scan of {', '.join(names)} for regions {', '.join(region_ids)}; "
               f"registry ids up to ~{top:,} in {len(slices)} slice(s)")
         for i, (lo, hi) in enumerate(slices, 1):
@@ -394,6 +405,8 @@ def main():
     st.add_argument("--regions", nargs="+", metavar="REGION_ID",
                     help="default: every region whose actor is in-use (test: pune-city)")
     st.add_argument("--parallel", type=int, default=4, help="full: registry slices run at the same time")
+    st.add_argument("--slices", nargs="+", type=int, metavar="N",
+                    help="full: start only these slices (1-based), e.g. to re-run one the registry cut short")
     st.add_argument("--max-cost", type=float, help="USD cap for all runs together, split evenly between them "
                                                    "(default: test 3, full 65, delta 15)")
     st.add_argument("--test-files", type=int, default=2000, help="test: how many of the newest registry files to read")
