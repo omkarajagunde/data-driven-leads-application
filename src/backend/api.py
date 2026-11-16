@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import db  # noqa: E402
 import env  # noqa: E402
 import insights  # noqa: E402
+from ratelimit import RateLimit  # noqa: E402
 import metrics as m  # noqa: E402
 
 env.load_dotenv()
@@ -80,6 +81,8 @@ class FrontendApi:
 
 app.add_middleware(FrontendApi)
 app.add_middleware(GZipMiddleware, minimum_size=2048)
+# Outermost, so it counts the request as the client sent it (before the page's key is added).
+app.add_middleware(RateLimit)
 
 
 def get_con():

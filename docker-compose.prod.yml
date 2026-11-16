@@ -27,6 +27,9 @@ services:
       APIFY_TOKEN: ${APIFY_TOKEN:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       FX_INR_PER_USD: ${FX_INR_PER_USD:-88}
+      # No proxy in front here, so forwarded headers are not trusted (a client could fake them to
+      # dodge the rate limit). Behind nginx / Caddy on the same host, set this to 127.0.0.1.
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-none}
       PORT: "8000"
     ports:
       - "${APP_PORT:-8000}:8000"

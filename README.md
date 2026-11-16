@@ -160,6 +160,19 @@ uvicorn api:app --app-dir src/backend --port 8000
 # Swagger: http://localhost:8000/docs  (Authorize -> paste the key)
 ```
 
+- **Website:** `/api/...` is open to every visitor. The server adds `FRONTEND_API_KEY` itself, so set that once as an environment variable (on Railway: the app service's Variables).
+- **Direct callers:** send `X-API-Key: <key>` on `/v1/...`.
+- **Rate limits per client** (IP for visitors, key for direct callers):
+
+  | What | Limit |
+  |---|---|
+  | Website and map | 240 a minute |
+  | Apartment-level prices (`/units`) | 30 a minute |
+  | Direct callers with a key | 600 a minute |
+  | Waitlist sign-ups | 5 per 10 minutes |
+
+  Over the limit the answer is 429 with `Retry-After`. Change a limit with `RATE_LIMIT_API`, `RATE_LIMIT_UNITS`, `RATE_LIMIT_KEYED` or `RATE_LIMIT_WAITLIST`.
+
 | Zoom | Endpoint |
 |---|---|
 | 1 | `GET /v1/regions` |
