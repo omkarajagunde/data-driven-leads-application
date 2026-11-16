@@ -96,8 +96,9 @@ def _download(api, r, path) -> int:
     total = have
     with path.open("a", encoding="utf-8") as out:
         while True:
-            page = as_dict(api.dataset(r["apify_dataset_id"]).list_items(offset=total, limit=PAGE))
-            items = page.get("items") or []
+            page = api.dataset(r["apify_dataset_id"]).list_items(offset=total, limit=PAGE)
+            # apify-client returns a DatasetItemsPage (newer) or a dict (older); both carry `items`.
+            items = (page.get("items") if isinstance(page, dict) else getattr(page, "items", None)) or []
             for it in items:
                 out.write(json.dumps(it, ensure_ascii=False) + "\n")
             total += len(items)
