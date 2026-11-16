@@ -1,0 +1,19 @@
+# secrets
+.env
+.env.*
+!.env.example
+
+# data: database contents and raw scraper output never go in git
+data/
+*.jsonl
+*.db
+*.db-*
+
+# build and tooling
+.venv/
+__pycache__/
+node_modules/
+src/frontend/dist/
+.hallmark/
+src/frontend/.hallmark/
+.DS_Store

@@ -1,0 +1,743 @@
+{
+  "schemaVersion": 1,
+  "regions": [
+    {
+      "id": "pune-city",
+      "name": "Pune City",
+      "state": "Maharashtra",
+      "centre": { "latitude": 18.5204, "longitude": 73.8567 },
+      "rera": {
+        "authority": "MahaRERA",
+        "website": "https://maharera.maharashtra.gov.in"
+      },
+      "apify": {
+        "actor": "nice_dev/maharera-projects-scraper",
+        "url": "https://apify.com/nice_dev/maharera-projects-scraper",
+        "status": "in-use"
+      },
+      "zones": [
+        {
+          "id": "central",
+          "name": "Central",
+          "districts": [
+            {
+              "id": "pune",
+              "name": "Pune",
+              "pincodes": [
+                { "code": "411001", "latitude": 18.52960, "longitude": 73.87602, "areas": ["Camp", "Pune GPO", "Koregaon Park"] },
+                { "code": "411002", "latitude": 18.51249, "longitude": 73.86118, "areas": ["Budhwar Peth", "Shukrawar Peth"] },
+                { "code": "411004", "latitude": 18.51573, "longitude": 73.83487, "areas": ["Deccan Gymkhana", "Erandwane"] },
+                { "code": "411005", "latitude": 18.52933, "longitude": 73.85285, "areas": ["Shivajinagar"] },
+                { "code": "411011", "latitude": 18.52348, "longitude": 73.86386, "areas": ["Kasba Peth", "Rasta Peth"] },
+                { "code": "411016", "latitude": 18.52898, "longitude": 73.82991, "areas": ["Model Colony"] },
+                { "code": "411030", "latitude": 18.51022, "longitude": 73.84671, "areas": ["Sadashiv Peth", "Navi Peth"] },
+                { "code": "411042", "latitude": 18.50308, "longitude": 73.86607, "areas": ["Swargate"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "east",
+          "name": "East",
+          "districts": [
+            {
+              "id": "pune",
+              "name": "Pune",
+              "pincodes": [
+                { "code": "411006", "latitude": 18.55272, "longitude": 73.88964, "areas": ["Yerwada", "Kalyani Nagar"] },
+                { "code": "411013", "latitude": 18.50921, "longitude": 73.91193, "areas": ["Hadapsar Industrial Estate"] },
+                { "code": "411014", "latitude": 18.55740, "longitude": 73.92830, "areas": ["Viman Nagar", "Vadgaon Sheri", "Kharadi"] },
+                { "code": "411028", "latitude": 18.49691, "longitude": 73.94186, "areas": ["Hadapsar", "Magarpatta", "Sasane Nagar"] },
+                { "code": "411036", "latitude": 18.53326, "longitude": 73.93709, "areas": ["Mundhwa"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "west",
+          "name": "West",
+          "districts": [
+            {
+              "id": "pune",
+              "name": "Pune",
+              "pincodes": [
+                { "code": "411007", "latitude": 18.55417, "longitude": 73.81962, "areas": ["Aundh", "Ganeshkhind"] },
+                { "code": "411008", "latitude": 18.52809, "longitude": 73.80368, "areas": ["Pashan"] },
+                { "code": "411021", "latitude": 18.52823, "longitude": 73.77781, "areas": ["Bavdhan", "Sus"] },
+                { "code": "411038", "latitude": 18.51657, "longitude": 73.80368, "areas": ["Kothrud"] },
+                { "code": "411045", "latitude": 18.56424, "longitude": 73.77694, "areas": ["Baner", "Balewadi", "Mahalunge"] },
+                { "code": "411052", "latitude": 18.48513, "longitude": 73.81109, "areas": ["Karve Nagar"] },
+                { "code": "411058", "latitude": 18.48464, "longitude": 73.80073, "areas": ["Warje"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "north",
+          "name": "North",
+          "districts": [
+            {
+              "id": "pune",
+              "name": "Pune",
+              "pincodes": [
+                { "code": "411003", "latitude": 18.56387, "longitude": 73.85153, "areas": ["Khadki"] },
+                { "code": "411015", "latitude": 18.58178, "longitude": 73.88240, "areas": ["Vishrantwadi", "Dhanori", "Dighi Camp"] },
+                { "code": "411020", "latitude": 18.56231, "longitude": 73.83379, "areas": ["Range Hills"] },
+                { "code": "411032", "latitude": 18.59310, "longitude": 73.92178, "areas": ["Lohegaon Air Force Station"] },
+                { "code": "411047", "latitude": 18.61845, "longitude": 73.94774, "areas": ["Lohegaon"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "south",
+          "name": "South",
+          "districts": [
+            {
+              "id": "pune",
+              "name": "Pune",
+              "pincodes": [
+                { "code": "411009", "latitude": 18.48658, "longitude": 73.85011, "areas": ["Parvati", "Sahakarnagar"] },
+                { "code": "411037", "latitude": 18.48076, "longitude": 73.87243, "areas": ["Bibwewadi", "Market Yard"] },
+                { "code": "411040", "latitude": 18.49209, "longitude": 73.90018, "areas": ["Wanowrie"] },
+                { "code": "411041", "latitude": 18.46017, "longitude": 73.81149, "areas": ["Vadgaon Budruk", "Dhayari", "Nanded", "Narhe"] },
+                { "code": "411043", "latitude": 18.46482, "longitude": 73.84838, "areas": ["Dhankawadi"] },
+                { "code": "411046", "latitude": 18.43217, "longitude": 73.85955, "areas": ["Katraj", "Ambegaon"] },
+                { "code": "411048", "latitude": 18.46451, "longitude": 73.88723, "areas": ["Kondhwa", "NIBM"] },
+                { "code": "411051", "latitude": 18.47780, "longitude": 73.82132, "areas": ["Anandnagar", "Sinhagad Road"] },
+                { "code": "411060", "latitude": 18.46651, "longitude": 73.91684, "areas": ["Mohammadwadi", "Undri"] }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pmrda",
+      "name": "PMRDA",
+      "state": "Maharashtra",
+      "centre": { "latitude": 18.62, "longitude": 73.8 },
+      "rera": {
+        "authority": "MahaRERA",
+        "website": "https://maharera.maharashtra.gov.in"
+      },
+      "apify": {
+        "actor": "nice_dev/maharera-projects-scraper",
+        "url": "https://apify.com/nice_dev/maharera-projects-scraper",
+        "status": "in-use"
+      },
+      "zones": [
+        {
+          "id": "central",
+          "name": "Central",
+          "districts": []
+        },
+        {
+          "id": "east",
+          "name": "East",
+          "districts": [
+            {
+              "id": "pune",
+              "name": "Pune",
+              "pincodes": [
+                { "code": "412201", "latitude": 18.46519, "longitude": 74.04176, "areas": ["Loni Kalbhor"] },
+                { "code": "412202", "latitude": 18.48578, "longitude": 74.14748, "areas": ["Uruli Kanchan"] },
+                { "code": "412207", "latitude": 18.57805, "longitude": 74.14748, "areas": ["Wagholi", "Kesnand"] },
+                { "code": "412208", "latitude": 18.71650, "longitude": 74.14748, "areas": ["Shikrapur"] },
+                { "code": "412216", "latitude": 18.66223, "longitude": 74.05351, "areas": ["Lonikand", "Koregaon Bhima"] },
+                { "code": "412307", "latitude": 18.49996, "longitude": 73.97713, "areas": ["Manjri"] },
+                { "code": "412308", "latitude": 18.43607, "longitude": 73.97125, "areas": ["Phursungi", "Uruli Devachi"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "west",
+          "name": "West",
+          "districts": [
+            {
+              "id": "pune",
+              "name": "Pune",
+              "pincodes": [
+                { "code": "410401", "latitude": 18.73373, "longitude": 73.42981, "areas": ["Lonavala"] },
+                { "code": "410405", "latitude": 18.79662, "longitude": 73.48873, "areas": ["Kamshet"] },
+                { "code": "411057", "latitude": 18.59258, "longitude": 73.71836, "areas": ["Hinjewadi", "Wakad", "Marunji"] },
+                { "code": "412108", "latitude": 18.59154, "longitude": 73.51229, "areas": ["Paud"] },
+                { "code": "412115", "latitude": 18.53712, "longitude": 73.67717, "areas": ["Pirangut"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "north",
+          "name": "North",
+          "districts": [
+            {
+              "id": "pune",
+              "name": "Pune",
+              "pincodes": [
+                { "code": "410501", "latitude": 18.75062, "longitude": 73.87719, "areas": ["Chakan"] },
+                { "code": "410505", "latitude": 18.83445, "longitude": 73.91247, "areas": ["Rajgurunagar"] },
+                { "code": "410506", "latitude": 18.68579, "longitude": 73.66539, "areas": ["Talegaon Dabhade"] },
+                { "code": "410507", "latitude": 18.77167, "longitude": 73.72425, "areas": ["Talegaon General Hospital", "Induri"] },
+                { "code": "411012", "latitude": 18.58068, "longitude": 73.82867, "areas": ["Dapodi"] },
+                { "code": "411017", "latitude": 18.61032, "longitude": 73.78897, "areas": ["Pimpri", "Pimpri Colony", "Kalewadi", "Rahatani"] },
+                { "code": "411018", "latitude": 18.63543, "longitude": 73.81250, "areas": ["Pimpri PF", "Masulkar Colony", "Nehru Nagar"] },
+                { "code": "411019", "latitude": 18.65744, "longitude": 73.80073, "areas": ["Chinchwad East"] },
+                { "code": "411026", "latitude": 18.63750, "longitude": 73.83603, "areas": ["Bhosari MIDC", "Indrayani Nagar"] },
+                { "code": "411027", "latitude": 18.58831, "longitude": 73.80073, "areas": ["Sangvi", "Pimple Saudagar", "Pimple Nilakh"] },
+                { "code": "411033", "latitude": 18.61873, "longitude": 73.75367, "areas": ["Chinchwadgaon", "Thergaon", "Tathawade", "Punawale"] },
+                { "code": "411034", "latitude": 18.60609, "longitude": 73.82279, "areas": ["Kasarwadi"] },
+                { "code": "411035", "latitude": 18.65275, "longitude": 73.78014, "areas": ["Akurdi"] },
+                { "code": "411039", "latitude": 18.62490, "longitude": 73.85661, "areas": ["Bhosari Gaon"] },
+                { "code": "411044", "latitude": 18.66585, "longitude": 73.76544, "areas": ["Nigdi", "Pradhikaran"] },
+                { "code": "411061", "latitude": 18.58829, "longitude": 73.81691, "areas": ["Pimple Gurav"] },
+                { "code": "411062", "latitude": 18.68049, "longitude": 73.80073, "areas": ["Chikhali", "Talawade", "Rupeenagar"] },
+                { "code": "412101", "latitude": 18.67425, "longitude": 73.73013, "areas": ["Dehu Road", "Ravet", "Kiwale"] },
+                { "code": "412105", "latitude": 18.66045, "longitude": 73.90071, "areas": ["Alandi", "Moshi", "Charholi"] },
+                { "code": "412106", "latitude": 18.85544, "longitude": 73.63007, "areas": ["Vadgaon Maval"] },
+                { "code": "412109", "latitude": 18.71719, "longitude": 73.75955, "areas": ["Dehu"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "south",
+          "name": "South",
+          "districts": [
+            {
+              "id": "pune",
+              "name": "Pune",
+              "pincodes": [
+                { "code": "411023", "latitude": 18.46170, "longitude": 73.73602, "areas": ["NDA Khadakwasla", "Shivane", "Uttamnagar"] },
+                { "code": "411024", "latitude": 18.44525, "longitude": 73.78717, "areas": ["Khadakwasla", "Kirkatwadi"] },
+                { "code": "412205", "latitude": 18.23924, "longitude": 73.95949, "areas": ["Khed Shivapur"] },
+                { "code": "412206", "latitude": 18.08503, "longitude": 73.77132, "areas": ["Bhor"] },
+                { "code": "412213", "latitude": 18.28162, "longitude": 73.78309, "areas": ["Nasrapur"] },
+                { "code": "412301", "latitude": 18.33138, "longitude": 73.95949, "areas": ["Saswad"] }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mumbai-city",
+      "name": "Mumbai City",
+      "state": "Maharashtra",
+      "centre": { "latitude": 19.076, "longitude": 72.8777 },
+      "rera": {
+        "authority": "MahaRERA",
+        "website": "https://maharera.maharashtra.gov.in"
+      },
+      "apify": {
+        "actor": "nice_dev/maharera-projects-scraper",
+        "url": "https://apify.com/nice_dev/maharera-projects-scraper",
+        "status": "in-use"
+      },
+      "zones": [
+        {
+          "id": "central",
+          "name": "Central",
+          "districts": [
+            {
+              "id": "mumbai-city",
+              "name": "Mumbai City",
+              "pincodes": [
+                { "code": "400012", "latitude": 18.99954, "longitude": 72.83971, "areas": ["Parel", "BEST STaff Quarters", "Chamarbaug", "Haffkin Institute", "Lal Baug"] },
+                { "code": "400013", "latitude": 18.99817, "longitude": 72.82747, "areas": ["Delisle Road"] },
+                { "code": "400014", "latitude": 19.01480, "longitude": 72.84545, "areas": ["Dadar", "Dadar Colony", "Naigaon"] },
+                { "code": "400015", "latitude": 18.99609, "longitude": 72.85284, "areas": ["Sewri"] },
+                { "code": "400016", "latitude": 19.03895, "longitude": 72.84205, "areas": ["Mahim", "Kapad Bazar", "Mahim Bazar", "Mahim East", "Mori Road"] },
+                { "code": "400017", "latitude": 19.04559, "longitude": 72.85371, "areas": ["Dharavi", "Dharavi Road"] },
+                { "code": "400018", "latitude": 18.99851, "longitude": 72.81735, "areas": ["Worli", "Worli Naka"] },
+                { "code": "400019", "latitude": 19.02690, "longitude": 72.85538, "areas": ["Matunga"] },
+                { "code": "400022", "latitude": 19.04256, "longitude": 72.86381, "areas": ["Sion", "Chunabhatti", "Raoli Camp", "Transit Camp"] },
+                { "code": "400025", "latitude": 19.01583, "longitude": 72.82939, "areas": ["Prabhadevi", "New Prabhadevi Road"] },
+                { "code": "400028", "latitude": 19.02172, "longitude": 72.83748, "areas": ["Bhawani Shankar", "Bhawani Shankar Rd", "Gokhale Road", "Ranade Road", "S V S Marg"] },
+                { "code": "400030", "latitude": 19.01217, "longitude": 72.82186, "areas": ["Worli Colony", "Century Mill", "Worli Police Camp", "Worli Sea Face"] },
+                { "code": "400031", "latitude": 19.01329, "longitude": 72.85490, "areas": ["Wadala", "Kidwai Nagar", "Wadala Rs"] },
+                { "code": "400033", "latitude": 18.98563, "longitude": 72.84416, "areas": ["Tank Road", "Cotton Exchange", "Kalachowki", "L B S N E collage", "Reay Road"] },
+                { "code": "400037", "latitude": 19.02575, "longitude": 72.86969, "areas": ["Antop Hill", "B P T Colony", "C G S Colony", "Wadala Truck Terminal"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "east",
+          "name": "East",
+          "districts": [
+            {
+              "id": "mumbai-suburban",
+              "name": "Mumbai Suburban",
+              "pincodes": [
+                { "code": "400024", "latitude": 19.06427, "longitude": 72.88552, "areas": ["Nehru Nagar"] },
+                { "code": "400042", "latitude": 19.13382, "longitude": 72.93840, "areas": ["Bhandup East"] },
+                { "code": "400043", "latitude": 19.06326, "longitude": 72.92584, "areas": ["Shivaji Nagar", "D.M. Colony"] },
+                { "code": "400070", "latitude": 19.07411, "longitude": 72.88042, "areas": ["Kurla", "Kurla North", "Netajinagar"] },
+                { "code": "400071", "latitude": 19.05211, "longitude": 72.90067, "areas": ["Chembur", "Sindhi Society"] },
+                { "code": "400072", "latitude": 19.10180, "longitude": 72.89035, "areas": ["Sakinaka", "Vihar Road"] },
+                { "code": "400074", "latitude": 19.02900, "longitude": 72.88815, "areas": ["FCI", "Chembur Extension", "Mahul Road"] },
+                { "code": "400075", "latitude": 19.07992, "longitude": 72.91744, "areas": ["Pant Nagar", "Best Staff Colony", "R.A.Nagar"] },
+                { "code": "400076", "latitude": 19.12393, "longitude": 72.90944, "areas": ["Powai Iit"] },
+                { "code": "400077", "latitude": 19.07787, "longitude": 72.90556, "areas": ["Rajawadi"] },
+                { "code": "400078", "latitude": 19.15703, "longitude": 72.93274, "areas": ["Bhandup West", "Bhandup Ind. Estate", "J.M. Road", "P.H. Colony", "Usha Nagar"] },
+                { "code": "400079", "latitude": 19.10254, "longitude": 72.92543, "areas": ["Vikhroli", "Psm Colony"] },
+                { "code": "400080", "latitude": 19.17208, "longitude": 72.94826, "areas": ["Mulund West", "Mulund Dd Road", "Nahur", "Nehru Road", "S.B. Road"] },
+                { "code": "400081", "latitude": 19.16607, "longitude": 72.96456, "areas": ["Mulund East", "Mhada Colony"] },
+                { "code": "400082", "latitude": 19.17411, "longitude": 72.93720, "areas": ["Bhandup Complex", "Mulund Colony"] },
+                { "code": "400083", "latitude": 19.11662, "longitude": 72.93742, "areas": ["Tagore Nagar", "Kannamwar Nagar"] },
+                { "code": "400084", "latitude": 19.09757, "longitude": 72.90324, "areas": ["Barve Nagar"] },
+                { "code": "400085", "latitude": 19.01776, "longitude": 72.92539, "areas": ["BARC"] },
+                { "code": "400086", "latitude": 19.08931, "longitude": 72.90781, "areas": ["Ghatkopar West", "Rifle Range", "Sahakar Bhavan"] },
+                { "code": "400087", "latitude": 19.13909, "longitude": 72.89560, "areas": ["NITIE"] },
+                { "code": "400088", "latitude": 19.04826, "longitude": 72.92884, "areas": ["T.F.Donar", "Govandi", "Trombay"] },
+                { "code": "400089", "latitude": 19.06854, "longitude": 72.90032, "areas": ["Tilak Nagar", "Chembur Rs"] },
+                { "code": "400094", "latitude": 19.03588, "longitude": 72.92465, "areas": ["Anushakti Nagar"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "west",
+          "name": "West",
+          "districts": [
+            {
+              "id": "mumbai-suburban",
+              "name": "Mumbai Suburban",
+              "pincodes": [
+                { "code": "400029", "latitude": 19.07967, "longitude": 72.86790, "areas": ["Santacruz P&t Colony", "A I Staff Colony"] },
+                { "code": "400049", "latitude": 19.10472, "longitude": 72.82683, "areas": ["Juhu"] },
+                { "code": "400050", "latitude": 19.05517, "longitude": 72.82995, "areas": ["Bandra West"] },
+                { "code": "400051", "latitude": 19.05961, "longitude": 72.85530, "areas": ["Bandra(East)", "Audit Bhavan", "B.N. Bhavan", "Government Colony", "Kherwadi"] },
+                { "code": "400052", "latitude": 19.07171, "longitude": 72.83410, "areas": ["Khar Delivery", "Danda", "Khar Colony", "V.P. Road"] },
+                { "code": "400053", "latitude": 19.14040, "longitude": 72.82496, "areas": ["Azad Nagar", "Andheri"] },
+                { "code": "400054", "latitude": 19.08201, "longitude": 72.83447, "areas": ["Santacruz(West)", "Santacruz Central"] },
+                { "code": "400055", "latitude": 19.08039, "longitude": 72.84686, "areas": ["Santacruz(East)", "Vakola"] },
+                { "code": "400056", "latitude": 19.10450, "longitude": 72.83950, "areas": ["Vileparle(West)", "IRLA"] },
+                { "code": "400057", "latitude": 19.10074, "longitude": 72.84850, "areas": ["Vileeparle (East)", "Hanuman Road", "Vileparle Railway Station"] },
+                { "code": "400058", "latitude": 19.11910, "longitude": 72.84269, "areas": ["Andheri Railway Station", "H.M.P. School"] },
+                { "code": "400059", "latitude": 19.11186, "longitude": 72.87903, "areas": ["J.B. Nagar", "Marol Bazar", "Marol Naka"] },
+                { "code": "400060", "latitude": 19.13679, "longitude": 72.85791, "areas": ["Jogeshwari East"] },
+                { "code": "400061", "latitude": 19.14266, "longitude": 72.80534, "areas": ["Vesava", "Madh"] },
+                { "code": "400063", "latitude": 19.16481, "longitude": 72.85327, "areas": ["Goregaon East", "Sharma Estate"] },
+                { "code": "400065", "latitude": 19.15558, "longitude": 72.88496, "areas": ["Aareymilk Colony", "Nagari Niwara", "S R P F Camp"] },
+                { "code": "400069", "latitude": 19.11837, "longitude": 72.85007, "areas": ["Andheri East", "Nagardas Road"] },
+                { "code": "400093", "latitude": 19.12827, "longitude": 72.86771, "areas": ["Chakala Midc"] },
+                { "code": "400096", "latitude": 19.12666, "longitude": 72.87666, "areas": ["Seepz"] },
+                { "code": "400098", "latitude": 19.07176, "longitude": 72.86154, "areas": ["Vidyanagari"] },
+                { "code": "400099", "latitude": 19.09293, "longitude": 72.86538, "areas": ["Sahar P & T Colony", "Airport", "International Airport", "Sahargaon"] },
+                { "code": "400102", "latitude": 19.14190, "longitude": 72.83442, "areas": ["Jogeshwari West", "Oshiwara"] },
+                { "code": "400104", "latitude": 19.16304, "longitude": 72.83930, "areas": ["Motilal Nagar", "Bangur Nagar", "Goregaon", "Goregaon RS"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "north",
+          "name": "North",
+          "districts": [
+            {
+              "id": "mumbai-suburban",
+              "name": "Mumbai Suburban",
+              "pincodes": [
+                { "code": "400064", "latitude": 19.18723, "longitude": 72.84075, "areas": ["Malad West Dely", "Liberty Garden", "Malad", "Orlem"] },
+                { "code": "400066", "latitude": 19.23134, "longitude": 72.86353, "areas": ["Borivali East", "Daulat Nagar", "Magthane", "Rajendra Nagar", "S. K.Nagar"] },
+                { "code": "400067", "latitude": 19.20724, "longitude": 72.83482, "areas": ["Kandivali West", "Charkop", "Kandivali RS"] },
+                { "code": "400068", "latitude": 19.25359, "longitude": 72.86632, "areas": ["Dahisar", "Dahisar RS", "Ketkipada"] },
+                { "code": "400091", "latitude": 19.23404, "longitude": 72.83995, "areas": ["Borivali"] },
+                { "code": "400092", "latitude": 19.22472, "longitude": 72.85007, "areas": ["Borivali West"] },
+                { "code": "400095", "latitude": 19.18880, "longitude": 72.81970, "areas": ["Kharodi", "Ins Hamla"] },
+                { "code": "400097", "latitude": 19.18386, "longitude": 72.85843, "areas": ["Malad East", "Rani Sati Marg"] },
+                { "code": "400101", "latitude": 19.20586, "longitude": 72.86612, "areas": ["Kandivali East"] },
+                { "code": "400103", "latitude": 19.24502, "longitude": 72.84541, "areas": ["Mandapeshwar"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "south",
+          "name": "South",
+          "districts": [
+            {
+              "id": "mumbai-city",
+              "name": "Mumbai City",
+              "pincodes": [
+                { "code": "400001", "latitude": 18.93854, "longitude": 72.83633, "areas": ["Elephanta Caves Po", "Mumbai", "Bazargate", "M.P.T.", "Stock Exchange"] },
+                { "code": "400002", "latitude": 18.94837, "longitude": 72.82594, "areas": ["Kalbadevi", "Ramwadi", "S. C. Court", "Thakurdwar"] },
+                { "code": "400003", "latitude": 18.95319, "longitude": 72.83530, "areas": ["Mandvi", "B.P.Lane", "Masjid", "Null Bazar"] },
+                { "code": "400004", "latitude": 18.95799, "longitude": 72.82144, "areas": ["Girgaon", "Ambewadi", "Charni Road", "Chaupati", "Madhavbaug"] },
+                { "code": "400005", "latitude": 18.91037, "longitude": 72.81976, "areas": ["Colaba", "Asvini", "Colaba Bazar", "Holiday Camp", "V.W.T.C."] },
+                { "code": "400006", "latitude": 18.95409, "longitude": 72.80045, "areas": ["Malabar Hill"] },
+                { "code": "400007", "latitude": 18.96184, "longitude": 72.81338, "areas": ["Grant Road", "Bharat Nagar", "N.S.Patkar Marg", "S V Marg", "Tardeo"] },
+                { "code": "400008", "latitude": 18.96714, "longitude": 72.82866, "areas": ["Mumbai Central", "Falkland Road", "J.J.Hospital", "Kamathipura", "M A Marg"] },
+                { "code": "400009", "latitude": 18.95830, "longitude": 72.83894, "areas": ["Chinchbunder", "Noor Baug", "Princess Dock"] },
+                { "code": "400010", "latitude": 18.97019, "longitude": 72.84596, "areas": ["Mazgaon", "Dockyard Road", "Mazgaon Dock", "Mazgaon Road", "V K Bhavan"] },
+                { "code": "400011", "latitude": 18.98105, "longitude": 72.82676, "areas": ["Jacob Circle", "Agripada", "BPC Jacob Circle", "Chinchpokli", "Haines Road"] },
+                { "code": "400020", "latitude": 18.93512, "longitude": 72.82644, "areas": ["Marine Lines", "Central Building", "Churchgate"] },
+                { "code": "400021", "latitude": 18.96186, "longitude": 72.92686, "areas": ["Nariman Point", "New Yogakshema"] },
+                { "code": "400026", "latitude": 18.97064, "longitude": 72.80948, "areas": ["Cumballa Hill", "Cumballa Sea Face", "Dr Deshmukh Marg", "Gowalia Tank"] },
+                { "code": "400027", "latitude": 18.97933, "longitude": 72.83825, "areas": ["V J B Udyan"] },
+                { "code": "400032", "latitude": 18.92901, "longitude": 72.83013, "areas": ["Mantralaya", "High Court Building", "Secretariate"] },
+                { "code": "400034", "latitude": 18.97242, "longitude": 72.81482, "areas": ["Tulsiwadi", "Haji Ali"] },
+                { "code": "400035", "latitude": 18.94169, "longitude": 72.79357, "areas": ["Rajbhavan"] }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mmrda",
+      "name": "MMRDA",
+      "state": "Maharashtra",
+      "centre": { "latitude": 19.2, "longitude": 73.1 },
+      "rera": {
+        "authority": "MahaRERA",
+        "website": "https://maharera.maharashtra.gov.in"
+      },
+      "apify": {
+        "actor": "nice_dev/maharera-projects-scraper",
+        "url": "https://apify.com/nice_dev/maharera-projects-scraper",
+        "status": "in-use"
+      },
+      "zones": [
+        {
+          "id": "central",
+          "name": "Central",
+          "districts": [
+            {
+              "id": "thane",
+              "name": "Thane",
+              "pincodes": [
+                { "code": "400601", "latitude": 19.20105, "longitude": 72.97854, "areas": ["Thane", "Thane Bazar", "Thane R.S."] },
+                { "code": "400602", "latitude": 19.19000, "longitude": 72.96820, "areas": ["Naupada", "Gokhale Road"] },
+                { "code": "400603", "latitude": 19.18341, "longitude": 72.97810, "areas": ["Thane East", "Kopri Colony"] },
+                { "code": "400604", "latitude": 19.19824, "longitude": 72.94901, "areas": ["Wagle I.E."] },
+                { "code": "400605", "latitude": 19.19439, "longitude": 72.99920, "areas": ["Kalwa"] },
+                { "code": "400606", "latitude": 19.21087, "longitude": 72.96082, "areas": ["Jekegram"] },
+                { "code": "400607", "latitude": 19.23928, "longitude": 72.98739, "areas": ["Sandozbaugh", "Chitalsar Manpada"] },
+                { "code": "400608", "latitude": 19.21841, "longitude": 72.99477, "areas": ["Balkum", "Shrirangnagar", "Tapasenagar"] },
+                { "code": "400610", "latitude": 19.23095, "longitude": 72.95173, "areas": ["Apna Bazar"] },
+                { "code": "400612", "latitude": 19.17993, "longitude": 73.02872, "areas": ["Dahisar", "Dawale", "Diwa", "Kausa", "Mumbra"] },
+                { "code": "400615", "latitude": 19.27155, "longitude": 72.96377, "areas": ["Kasarvadavali"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "east",
+          "name": "East",
+          "districts": [
+            {
+              "id": "thane",
+              "name": "Thane",
+              "pincodes": [
+                { "code": "421001", "latitude": 19.23808, "longitude": 73.15883, "areas": ["Ulhasnagar-1", "Bus Terminus"] },
+                { "code": "421002", "latitude": 19.22987, "longitude": 73.16151, "areas": ["Ulhasnagar-2", "Bhaji Market", "Bus Terminus", "Station Road Unr-3", "Ulhasnagar 1"] },
+                { "code": "421004", "latitude": 19.21260, "longitude": 73.16151, "areas": ["Ulhasnagar-4"] },
+                { "code": "421005", "latitude": 19.19533, "longitude": 73.16151, "areas": ["Ulhasnagar-5"] },
+                { "code": "421102", "latitude": 19.26979, "longitude": 73.18806, "areas": ["Atali", "Manivali", "Mohone"] },
+                { "code": "421201", "latitude": 19.21168, "longitude": 73.09070, "areas": ["Thakurli", "Tilaknagar", "Dombivali", "Ramnagar"] },
+                { "code": "421202", "latitude": 19.22207, "longitude": 73.07890, "areas": ["Vishnunagar"] },
+                { "code": "421203", "latitude": 19.19293, "longitude": 73.10545, "areas": ["Dombivali I.A."] },
+                { "code": "421204", "latitude": 19.16360, "longitude": 73.09955, "areas": ["Khoni", "Manpada", "Nilje", "Padle"] },
+                { "code": "421301", "latitude": 19.25271, "longitude": 73.12906, "areas": ["Kalyan D.C.", "Kalyan City", "Kalyan Rs", "Subhash Road"] },
+                { "code": "421302", "latitude": 19.35592, "longitude": 73.06414, "areas": ["Amane", "Angaon", "Anjur", "Chimbipada", "Chinchwali"] },
+                { "code": "421306", "latitude": 19.16804, "longitude": 73.14676, "areas": ["Dwarli", "Katemanivali", "Mangrul", "Pisavli", "Wadi"] },
+                { "code": "421308", "latitude": 19.32118, "longitude": 73.03167, "areas": ["Bhiwandi"] },
+                { "code": "421311", "latitude": 19.26088, "longitude": 73.09365, "areas": ["Saravali", "Kon", "Pimplas"] },
+                { "code": "421501", "latitude": 19.20070, "longitude": 73.18806, "areas": ["Ambernath", "Ambernath South", "Kansai"] },
+                { "code": "421503", "latitude": 19.14784, "longitude": 73.30012, "areas": ["Badlapur E.D.", "Chargaon", "Kulgaon", "Manjarli", "Pimpaloli"] },
+                { "code": "421605", "latitude": 19.31287, "longitude": 73.21756, "areas": ["Khadavali", "Manda", "Phalegaon", "Titwala"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "west",
+          "name": "West",
+          "districts": []
+        },
+        {
+          "id": "north",
+          "name": "North",
+          "districts": [
+            {
+              "id": "thane",
+              "name": "Thane",
+              "pincodes": [
+                { "code": "401101", "latitude": 19.29991, "longitude": 72.83973, "areas": ["Bhayander West", "Rai"] },
+                { "code": "401104", "areas": ["Mira"] },
+                { "code": "401105", "latitude": 19.30535, "longitude": 72.86632, "areas": ["Bhayander East"] },
+                { "code": "401106", "latitude": 19.29018, "longitude": 72.79837, "areas": ["Dongri", "Uttan"] },
+                { "code": "401107", "latitude": 19.27627, "longitude": 72.89290, "areas": ["Ghodbander", "Kashi", "Mira Road", "Mira"] }
+              ]
+            },
+            {
+              "id": "palghar",
+              "name": "Palghar",
+              "pincodes": [
+                { "code": "401201", "latitude": 19.36953, "longitude": 72.78655, "areas": ["Bassein", "Bhuigaon", "Girij", "Holi Bazar", "Kaular Budruk"] },
+                { "code": "401202", "latitude": 19.37296, "longitude": 72.82201, "areas": ["Bassein Road", "Umela", "Vasai Road E"] },
+                { "code": "401203", "latitude": 19.41668, "longitude": 72.79837, "areas": ["Gass", "Nala", "Sopara", "Umrale"] },
+                { "code": "401207", "latitude": 19.34680, "longitude": 72.81905, "areas": ["Naigaon", "Papdi"] },
+                { "code": "401208", "latitude": 19.37348, "longitude": 72.88699, "areas": ["Gokhiware", "Juchandra", "Kaman", "Pelhar", "Rajawali"] },
+                { "code": "401209", "latitude": 19.42213, "longitude": 72.82496, "areas": ["Nallosapare E"] },
+                { "code": "401301", "latitude": 19.46039, "longitude": 72.77473, "areas": ["Agashi", "Chikhal Dongre", "Kophrad", "Vatar"] },
+                { "code": "401303", "latitude": 19.43443, "longitude": 72.92243, "areas": ["Bhatane", "Bolinj", "Chandansar", "Dahtsar T", "Khaniwade"] },
+                { "code": "401305", "latitude": 19.45463, "longitude": 72.83382, "areas": ["Virar East"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "south",
+          "name": "South",
+          "districts": [
+            {
+              "id": "thane",
+              "name": "Thane",
+              "pincodes": [
+                { "code": "400614", "latitude": 19.02834, "longitude": 73.03758, "areas": ["Konkan Bhavan", "Belapur Node- V", "Belapur Node-- III"] },
+                { "code": "400701", "latitude": 19.12648, "longitude": 73.01101, "areas": ["Ghansoli"] },
+                { "code": "400703", "latitude": 19.07935, "longitude": 72.99920, "areas": ["Vashi", "K.U.Bazar", "Sanpada", "Turbhe", "Turbhe Market"] },
+                { "code": "400705", "latitude": 19.05747, "longitude": 73.01101, "areas": ["Sanpada"] },
+                { "code": "400706", "latitude": 19.03446, "longitude": 73.01101, "areas": ["Darave", "Nerul Node-III", "Nerul Node-II", "Nerul Sec-48"] },
+                { "code": "400708", "latitude": 19.15987, "longitude": 72.99920, "areas": ["Airoli"] },
+                { "code": "400709", "latitude": 19.09976, "longitude": 73.00215, "areas": ["Kopar Khairne"] },
+                { "code": "400710", "latitude": 19.10459, "longitude": 73.02282, "areas": ["Millenium Business Park"] }
+              ]
+            },
+            {
+              "id": "raigad",
+              "name": "Raigad",
+              "pincodes": [
+                { "code": "400702", "latitude": 18.87426, "longitude": 72.95787, "areas": ["Bokadvira", "Karanja", "Kegaon", "Sheva", "Uran"] },
+                { "code": "400704", "latitude": 18.89651, "longitude": 72.91948, "areas": ["N.S.Karanja", "Mora"] },
+                { "code": "400707", "latitude": 18.88278, "longitude": 72.98739, "areas": ["Jnpt", "Jaskhar", "Navghar"] },
+                { "code": "402107", "latitude": 18.74130, "longitude": 73.13496, "areas": ["Ambeghar", "Balavali", "Dadar", "Dolvi", "Gadab"] },
+                { "code": "402201", "latitude": 18.65345, "longitude": 72.86927, "areas": ["Alibag"] },
+                { "code": "410201", "latitude": 18.92622, "longitude": 73.39445, "areas": ["Ambivali", "Beed Budruk", "Bhivpuri Camp", "Chinchwali", "Dahivali T.Need"] },
+                { "code": "410203", "latitude": 18.77947, "longitude": 73.30012, "areas": ["Donwat", "Khambewadi", "Sajgaon", "Shilphata", "Vavoshi"] },
+                { "code": "410206", "latitude": 19.00091, "longitude": 73.20576, "areas": ["Adai", "Awre", "Chawk", "Chirner", "Dighode"] },
+                { "code": "410208", "latitude": 19.07376, "longitude": 73.12316, "areas": ["Devichapada", "Koynavale", "Navde", "Padghe", "Taloja"] },
+                { "code": "410210", "latitude": 19.06302, "longitude": 73.07004, "areas": ["Kharghar"] },
+                { "code": "410218", "latitude": 19.03183, "longitude": 73.10545, "areas": ["Kalamboli Node"] },
+                { "code": "410221", "latitude": 18.94611, "longitude": 73.11136, "areas": ["Ajivali", "Barapada", "Chikhale", "Ongc Complex,panvel", "Palaspe"] }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bengaluru",
+      "name": "Bengaluru",
+      "state": "Karnataka",
+      "centre": { "latitude": 12.9716, "longitude": 77.5946 },
+      "rera": {
+        "authority": "K-RERA",
+        "website": "https://rera.karnataka.gov.in"
+      },
+      "apify": {
+        "actor": "growthscrapers/rera-real-estate-scraper",
+        "url": "https://apify.com/growthscrapers/rera-real-estate-scraper",
+        "status": "rejected",
+        "note": "Trial 2026-11-14: returned 0 projects for Bengaluru; it reads 99acres listing pages, not the K-RERA registry."
+      },
+      "zones": [
+        {
+          "id": "central",
+          "name": "Central",
+          "districts": [
+            {
+              "id": "bengaluru-urban",
+              "name": "Bengaluru Urban",
+              "pincodes": [
+                { "code": "560001", "latitude": 12.97659, "longitude": 77.59927, "areas": ["Bangalore", "Bangalore Bazaar", "CMM Court Complex", "Dr. Ambedkar Veedhi", "HighCourt"] },
+                { "code": "560002", "latitude": 12.96352, "longitude": 77.58211, "areas": ["Bangalore City", "Bangalore Corporation Building"] },
+                { "code": "560005", "latitude": 12.99799, "longitude": 77.62265, "areas": ["Fraser Town"] },
+                { "code": "560009", "latitude": 12.97703, "longitude": 77.57731, "areas": ["K. G. Road", "Bangalore Dist Offices Bldg"] },
+                { "code": "560018", "latitude": 12.95699, "longitude": 77.56373, "areas": ["Chamrajpet"] },
+                { "code": "560020", "latitude": 12.98892, "longitude": 77.57410, "areas": ["Seshadripuram"] },
+                { "code": "560025", "latitude": 12.96622, "longitude": 77.60680, "areas": ["Museum Road", "Bangalore Sub Foreign Post", "CMP Centre And School", "Richmond Town"] },
+                { "code": "560027", "latitude": 12.95609, "longitude": 77.59214, "areas": ["Wilson Garden", "Sampangiramnagar", "Shanthinagar"] },
+                { "code": "560042", "latitude": 12.98277, "longitude": 77.61305, "areas": ["Sivan Chetty Gardens"] },
+                { "code": "560046", "latitude": 13.00116, "longitude": 77.59955, "areas": ["Benson Town", "Jayamahal Road"] },
+                { "code": "560047", "latitude": 12.95368, "longitude": 77.61762, "areas": ["Viveknagar", "Austin Town"] },
+                { "code": "560051", "latitude": 12.98881, "longitude": 77.60349, "areas": ["H.K.P. Road"] },
+                { "code": "560052", "areas": ["Vasanthnagar"] },
+                { "code": "560053", "latitude": 12.96932, "longitude": 77.57307, "areas": ["Chickpet"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "east",
+          "name": "East",
+          "districts": [
+            {
+              "id": "bengaluru-urban",
+              "name": "Bengaluru Urban",
+              "pincodes": [
+                { "code": "560007", "latitude": 12.95792, "longitude": 77.63091, "areas": ["Agram", "Air Force Hospital"] },
+                { "code": "560008", "latitude": 12.98199, "longitude": 77.62561, "areas": ["H.A.L II Stage", "Hulsur Bazaar"] },
+                { "code": "560016", "latitude": 13.01659, "longitude": 77.68040, "areas": ["Doorvaninagar", "Krishnarajapuram R S", "Ramamurthy Nagar"] },
+                { "code": "560017", "latitude": 12.95511, "longitude": 77.65932, "areas": ["Vimanapura", "NAL"] },
+                { "code": "560033", "latitude": 12.99832, "longitude": 77.64087, "areas": ["Maruthi Sevanagar"] },
+                { "code": "560035", "latitude": 12.90480, "longitude": 77.68211, "areas": ["Carmelram"] },
+                { "code": "560036", "latitude": 13.00839, "longitude": 77.69601, "areas": ["Krishnarajapuram", "Devasandra"] },
+                { "code": "560037", "latitude": 12.95663, "longitude": 77.70468, "areas": ["Doddanekkundi", "Marathahalli Colony", "Kundalahalli", "Rameshnagar"] },
+                { "code": "560038", "latitude": 12.97835, "longitude": 77.64079, "areas": ["Indiranagar"] },
+                { "code": "560043", "latitude": 13.02063, "longitude": 77.64789, "areas": ["Horamavu", "Kalyananagar", "Banaswadi", "Jalavayuvihar"] },
+                { "code": "560048", "latitude": 12.98536, "longitude": 77.70813, "areas": ["Hoodi", "Mahadevapura"] },
+                { "code": "560049", "latitude": 13.02229, "longitude": 77.71321, "areas": ["Bidrahalli", "Mundur", "Virgonagar", "Bhattarahalli"] },
+                { "code": "560066", "latitude": 12.96981, "longitude": 77.74996, "areas": ["Whitefield", "EPIP"] },
+                { "code": "560067", "latitude": 12.99670, "longitude": 77.75820, "areas": ["Devanagundi", "Kadugodi", "Kalkunte", "Kannamangala", "Medimallasandra"] },
+                { "code": "560071", "latitude": 12.95330, "longitude": 77.64081, "areas": ["Domlur"] },
+                { "code": "560075", "latitude": 12.97063, "longitude": 77.65293, "areas": ["New Thippasandra", "Jeevanbhimanagar"] },
+                { "code": "560084", "latitude": 13.01460, "longitude": 77.62715, "areas": ["St. Thomas Town", "Lingarajapuram"] },
+                { "code": "560087", "latitude": 12.92147, "longitude": 77.73431, "areas": ["Gunjur", "Muthusandra", "Vartur"] },
+                { "code": "560093", "latitude": 12.98587, "longitude": 77.67130, "areas": ["C.V.Raman Nagar"] },
+                { "code": "560103", "latitude": 12.92987, "longitude": 77.68484, "areas": ["Bellandur", "Panathur"] },
+                { "code": "562125", "latitude": 12.86137, "longitude": 77.78665, "areas": ["Dommasandra", "Handenahalli", "Kugur", "Neriga", "Sarjapura"] }
+              ]
+            },
+            {
+              "id": "bengaluru-rural",
+              "name": "Bengaluru Rural",
+              "pincodes": [
+                { "code": "562114", "latitude": 13.04769, "longitude": 77.85960, "areas": ["Doddagattiganabbe", "Doddanallala", "Hasigala", "Hoskote", "Hoskote Indl. Area"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "west",
+          "name": "West",
+          "districts": [
+            {
+              "id": "bengaluru-urban",
+              "name": "Bengaluru Urban",
+              "pincodes": [
+                { "code": "560010", "latitude": 12.98498, "longitude": 77.55334, "areas": ["Rajajinagar", "Industrial Estate", "Rajajinagar IVth Block"] },
+                { "code": "560021", "latitude": 12.99252, "longitude": 77.56329, "areas": ["Srirampuram", "Gayathrinagar"] },
+                { "code": "560023", "latitude": 12.97574, "longitude": 77.55858, "areas": ["Magadi Road"] },
+                { "code": "560026", "latitude": 12.95652, "longitude": 77.54835, "areas": ["Governmemnt Electric Factory", "Deepanjalinagar"] },
+                { "code": "560039", "latitude": 12.95117, "longitude": 77.52707, "areas": ["Nayandahalli"] },
+                { "code": "560040", "latitude": 12.96803, "longitude": 77.53047, "areas": ["Vijayanagar", "Chandra Lay Out", "Vijayanagar East"] },
+                { "code": "560056", "latitude": 12.95147, "longitude": 77.49214, "areas": ["Bnagalore Viswavidalaya", "Mallathahalli"] },
+                { "code": "560059", "latitude": 12.92512, "longitude": 77.49918, "areas": ["Rv Niketan"] },
+                { "code": "560060", "latitude": 12.91047, "longitude": 77.48418, "areas": ["Chudenapura", "Kengeri", "Sulikere"] },
+                { "code": "560072", "latitude": 12.97192, "longitude": 77.51281, "areas": ["Nagarbhavi"] },
+                { "code": "560074", "latitude": 12.88238, "longitude": 77.44181, "areas": ["Kumbalagodu", "Kumbalgodu Gollahalli", "Ramohalli"] },
+                { "code": "560079", "latitude": 12.98903, "longitude": 77.53317, "areas": ["Basaveshwaranagar", "K H B Colony", "Kamakshipalya"] },
+                { "code": "560086", "latitude": 13.00666, "longitude": 77.54498, "areas": ["Mahalakshmipuram Layout", "West of Chord Road II stage"] },
+                { "code": "560096", "latitude": 13.01581, "longitude": 77.53902, "areas": ["Nandinilayout"] },
+                { "code": "560098", "latitude": 12.91555, "longitude": 77.51347, "areas": ["Rajarajeshwarinagar"] },
+                { "code": "560104", "latitude": 12.96213, "longitude": 77.53756, "areas": ["Hampinagar"] },
+                { "code": "560110", "latitude": 12.94989, "longitude": 77.48001, "areas": ["Ullalu Upanagar"] },
+                { "code": "562162", "latitude": 13.06233, "longitude": 77.45872, "areas": ["Aluru", "Dasanapura", "Hullegowdanahalli", "Huskur", "Lakshmipura"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "north",
+          "name": "North",
+          "districts": [
+            {
+              "id": "bengaluru-urban",
+              "name": "Bengaluru Urban",
+              "pincodes": [
+                { "code": "560003", "latitude": 13.00191, "longitude": 77.57134, "areas": ["Malleswaram", "Palace Guttahalli", "Swimming Pool Extn", "Vyalikaval Extn"] },
+                { "code": "560006", "latitude": 13.01384, "longitude": 77.58767, "areas": ["J.C.Nagar", "Training Command IAF"] },
+                { "code": "560012", "latitude": 13.01401, "longitude": 77.56576, "areas": ["Science Institute"] },
+                { "code": "560013", "latitude": 13.05034, "longitude": 77.55290, "areas": ["Jalahalli"] },
+                { "code": "560014", "latitude": 13.07210, "longitude": 77.53974, "areas": ["Jalahalli East"] },
+                { "code": "560015", "latitude": 13.06257, "longitude": 77.52840, "areas": ["Jalahalli West"] },
+                { "code": "560022", "latitude": 13.02888, "longitude": 77.54004, "areas": ["Yeswanthpura", "Yeshwanthpur Bazar"] },
+                { "code": "560024", "latitude": 13.04938, "longitude": 77.59919, "areas": ["H.A. Farm", "Anandnagar", "Hebbal Kempapura"] },
+                { "code": "560032", "latitude": 13.02980, "longitude": 77.60470, "areas": ["R T Nagar", "P&T Col. Kavalbyrasandra"] },
+                { "code": "560045", "latitude": 13.02622, "longitude": 77.61998, "areas": ["Arabic College", "Venkateshapura"] },
+                { "code": "560054", "latitude": 13.03466, "longitude": 77.55721, "areas": ["Msrit", "Mathikere", "Sri Chowdeshwari"] },
+                { "code": "560055", "latitude": 13.00935, "longitude": 77.56051, "areas": ["Malleswaram West"] },
+                { "code": "560057", "latitude": 13.04291, "longitude": 77.51315, "areas": ["Peenya Dasarahalli"] },
+                { "code": "560058", "latitude": 13.02809, "longitude": 77.51208, "areas": ["Peenya Small Industries", "Laggere", "Peenya I Stage"] },
+                { "code": "560063", "latitude": 13.12909, "longitude": 77.61423, "areas": ["A F Station Yelahanka", "BSF Campus Yelahanka"] },
+                { "code": "560064", "latitude": 13.10197, "longitude": 77.58636, "areas": ["Jakkur", "Rajanakunte", "Singanayakanahalli", "Yelahanka", "Attur"] },
+                { "code": "560065", "latitude": 13.08220, "longitude": 77.57627, "areas": ["G.K.V.K."] },
+                { "code": "560073", "latitude": 13.04962, "longitude": 77.49415, "areas": ["Nagasandra", "Bagalgunte", "Chikkabidarkal", "Nelakadiranahalli"] },
+                { "code": "560077", "latitude": 13.06395, "longitude": 77.65036, "areas": ["Doddagubbi", "Dr. Shivarama Karanth Nagar", "Kothanur"] },
+                { "code": "560080", "latitude": 13.01030, "longitude": 77.57960, "areas": ["Sadashivanagar"] },
+                { "code": "560090", "latitude": 13.10388, "longitude": 77.49888, "areas": ["Chikkabanavara", "Silvepura", "Tarabanahalli"] },
+                { "code": "560091", "latitude": 12.98664, "longitude": 77.49043, "areas": ["Bapagrama", "Kodigehalli", "Viswaneedam", "Herohalli"] },
+                { "code": "560092", "latitude": 13.06410, "longitude": 77.59312, "areas": ["Amruthahalli", "Byatarayanapura", "Kodigehalli", "Sahakaranagar"] },
+                { "code": "560094", "latitude": 13.03930, "longitude": 77.57398, "areas": ["R.M.V. Extension II Stage", "ISRO Anthariksha Bhavan"] },
+                { "code": "560097", "latitude": 13.08090, "longitude": 77.55650, "areas": ["Vidyaranyapura"] },
+                { "code": "560112", "latitude": 12.97785, "longitude": 77.46446, "areas": ["Kodigehalli"] },
+                { "code": "560300", "latitude": 13.19798, "longitude": 77.70018, "areas": ["Bangalore International Airport"] },
+                { "code": "562149", "latitude": 13.11951, "longitude": 77.67861, "areas": ["Bagalur", "Bandikodigehalli", "Kannur"] },
+                { "code": "562157", "latitude": 13.17255, "longitude": 77.63070, "areas": ["Bettahalsur", "Chikkajala", "Doddajala", "Hunasamaranahalli", "Tarahunise"] }
+              ]
+            },
+            {
+              "id": "bengaluru-rural",
+              "name": "Bengaluru Rural",
+              "pincodes": [
+                { "code": "560088", "latitude": 13.13857, "longitude": 77.47851, "areas": ["Hessarghatta"] },
+                { "code": "560089", "latitude": 13.15507, "longitude": 77.50461, "areas": ["Byatha", "Hessarghatta Lake", "Kakolu", "Shivakote"] },
+                { "code": "560107", "latitude": 13.08966, "longitude": 77.48621, "areas": ["Achitnagar"] },
+                { "code": "561203", "latitude": 13.30170, "longitude": 77.49314, "areas": ["Antharahalli", "Arallumallige", "Dodballapura", "Gundamgere", "Hanabe"] },
+                { "code": "562110", "latitude": 13.26316, "longitude": 77.63070, "areas": ["Alurduddanahalli", "Anneshwara", "Aradeshanahalli", "Devanahalli", "Doddasanne"] },
+                { "code": "562123", "latitude": 13.11377, "longitude": 77.35541, "areas": ["Arasinakunte", "Budihal", "Gollahalli", "Honnasandra", "Jakkanahalli"] }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "south",
+          "name": "South",
+          "districts": [
+            {
+              "id": "bengaluru-urban",
+              "name": "Bengaluru Urban",
+              "pincodes": [
+                { "code": "560004", "latitude": 12.94375, "longitude": 77.57376, "areas": ["Basavanagudi", "Mavalli", "Pampamahakavi Road", "Thyagarajnagar"] },
+                { "code": "560011", "latitude": 12.93367, "longitude": 77.58996, "areas": ["Jayangar III Block", "Madhavan Park"] },
+                { "code": "560019", "latitude": 12.94482, "longitude": 77.56156, "areas": ["Gaviopuram Extension"] },
+                { "code": "560028", "latitude": 12.93311, "longitude": 77.56802, "areas": ["Tyagrajnagar"] },
+                { "code": "560029", "latitude": 12.93426, "longitude": 77.60440, "areas": ["Dharmaram College", "Tavarekere"] },
+                { "code": "560030", "latitude": 12.94415, "longitude": 77.60762, "areas": ["Adugodi"] },
+                { "code": "560034", "latitude": 12.92614, "longitude": 77.62211, "areas": ["Koramangala", "Agara", "Koramangala I Block", "St. John's Medical College"] },
+                { "code": "560041", "latitude": 12.92171, "longitude": 77.59362, "areas": ["Jayanagar", "Tilaknagar"] },
+                { "code": "560050", "latitude": 12.93978, "longitude": 77.55334, "areas": ["Banashankari", "Ashoknagar", "Dasarahalli(Srinagar)", "State Bank Of Mysore Colony"] },
+                { "code": "560061", "latitude": 12.90373, "longitude": 77.53764, "areas": ["Subramanyapura", "Chikkalasandra"] },
+                { "code": "560062", "latitude": 12.88340, "longitude": 77.54859, "areas": ["Doddakallasandra", "Konanakunte"] },
+                { "code": "560068", "latitude": 12.88927, "longitude": 77.63991, "areas": ["Bommanahalli", "Begur", "Madivala", "Singasandra"] },
+                { "code": "560069", "latitude": 12.93935, "longitude": 77.58281, "areas": ["Jayangar East S.O"] },
+                { "code": "560070", "latitude": 12.91493, "longitude": 77.56349, "areas": ["B Sk II Stage", "Jayanagar West", "Padmanabhnagar", "Tyagrajnagar"] },
+                { "code": "560076", "latitude": 12.88451, "longitude": 77.60355, "areas": ["Bannerghatta Road", "Hulimavu", "JP Nagar VIII phase", "Mico Layout", "Mount St Joseph"] },
+                { "code": "560078", "latitude": 12.89877, "longitude": 77.57641, "areas": ["J P Nagar", "JP Nagar III Phase", "Kumaraswamy Layout", "Yelachenahalli"] },
+                { "code": "560081", "latitude": 12.80034, "longitude": 77.70801, "areas": ["Chandapura"] },
+                { "code": "560082", "latitude": 12.82199, "longitude": 77.51034, "areas": ["Bolare", "Kagalipura", "Somanhalli", "Taralu", "Thataguni"] },
+                { "code": "560083", "latitude": 12.82667, "longitude": 77.55493, "areas": ["Bannerghatta", "Kalkere", "Ragihalli", "Sakalavara", "Gottigere"] },
+                { "code": "560085", "latitude": 12.93060, "longitude": 77.54337, "areas": ["Banashankari III Stage", "Girinagar", "Kathriguppe"] },
+                { "code": "560095", "latitude": 12.93878, "longitude": 77.62068, "areas": ["Koramangala VI Bk"] },
+                { "code": "560099", "latitude": 12.81242, "longitude": 77.69403, "areas": ["Bommasandra Industrial Estate", "Chandapura", "Huskur", "Muthanallur"] },
+                { "code": "560100", "latitude": 12.84985, "longitude": 77.65449, "areas": ["Electronics City", "Wipro Limited"] },
+                { "code": "560102", "latitude": 12.91186, "longitude": 77.64459, "areas": ["HSR Layout"] },
+                { "code": "560105", "latitude": 12.77748, "longitude": 77.64216, "areas": ["Haragadde", "Hennagara", "Hulimangala", "Jigani", "Kallubalu"] },
+                { "code": "560108", "latitude": 12.84971, "longitude": 77.55908, "areas": ["Anjanapura"] },
+                { "code": "560109", "latitude": 12.86524, "longitude": 77.52403, "areas": ["Thalaghattapura"] },
+                { "code": "562106", "latitude": 12.72269, "longitude": 77.67652, "areas": ["Anekal", "Bestamaranahalli", "Byagadadenahalli", "Guddanahalli", "Indalavadi"] },
+                { "code": "562107", "latitude": 12.78287, "longitude": 77.75665, "areas": ["Attibele", "Bidaraguppe", "Mayasandra", "Neralur", "Yadavanahalli"] }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

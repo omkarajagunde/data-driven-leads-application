@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+!.env.example
+.venv
+data
+**/node_modules
+src/frontend/dist
+**/__pycache__
+.hallmark
+src/frontend/.hallmark
+*.jsonl

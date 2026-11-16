@@ -1,0 +1,35 @@
+# Local Postgres + a browser UI for it. Both listen on localhost only.
+#   docker compose up -d
+#   Postgres: localhost:5432   (database "data-driven-leads", user "leads", password from .env)
+#   pgweb UI: http://localhost:8081   (browse tables, run SQL, export CSV; no login)
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: data-driven-leads
+      POSTGRES_USER: leads
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - leads_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leads -d data-driven-leads"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  pgweb:
+    image: sosedoff/pgweb:latest
+    restart: unless-stopped
+    environment:
+      PGWEB_DATABASE_URL: postgres://leads:${POSTGRES_PASSWORD}@postgres:5432/data-driven-leads?sslmode=disable
+    ports:
+      - "127.0.0.1:8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  leads_pgdata:

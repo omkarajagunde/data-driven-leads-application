@@ -1,0 +1,41 @@
+# Server deployment: the app image plus Postgres on a named volume, so the data survives
+# rebuilds and restarts. Data is loaded by hand afterwards, from inside the app container:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.prod.yml exec app python src/backend/driver.py start test
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: data-driven-leads
+      POSTGRES_USER: leads
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data   # not published: only the app container reaches it
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U leads -d data-driven-leads"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://leads:${POSTGRES_PASSWORD}@postgres:5432/data-driven-leads
+      FRONTEND_API_KEY: ${FRONTEND_API_KEY:?set FRONTEND_API_KEY in .env}
+      APIFY_TOKEN: ${APIFY_TOKEN:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      FX_INR_PER_USD: ${FX_INR_PER_USD:-88}
+      PORT: "8000"
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - rawdata:/app/data   # downloaded Apify runs and boundary files, kept across rebuilds
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  rawdata:
