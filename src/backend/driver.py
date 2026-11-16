@@ -363,14 +363,20 @@ def cmd_pages(con, a):
     if a.gap_ms:
         detail["minRequestIntervalMs"] = a.gap_ms
     name = lambda lo, top: f"subak-pages-{lo}-{top}"  # noqa: E731 - stable, so a re-run recognises its batches
-    done = {r["dataset_name"]: r for r in con.execute(
-        "SELECT dataset_name, status, rows_upserted, cost_usd FROM ingest_runs WHERE dataset_name LIKE 'subak-pages-%'")}
-    todo = [(lo, top) for lo, top in batches
-            if not (done.get(name(lo, top)) and done[name(lo, top)]["status"] in ("collected", "started", "downloaded"))]
-    spent = sum(float(r["cost_usd"] or 0) for r in done.values())
+    rows = con.execute("SELECT dataset_name, status, rows_upserted, cost_usd, notes FROM ingest_runs "
+                       "WHERE dataset_name LIKE 'subak-pages-%' ORDER BY run_id").fetchall()
+    spent = sum(float(r["cost_usd"] or 0) for r in rows)
+    # A batch counts as done once it saved something or ended normally; one the site cut short with
+    # nothing saved is tried again. (Several attempts of one batch share its name; the last one counts.)
+    last = {r["dataset_name"]: r for r in rows}
+    cut_short = lambda r: (r["status"] == "collected" and not r["rows_upserted"]  # noqa: E731
+                           and (r["notes"] or "").startswith("run ended"))
+    todo = [(lo, top) for lo, top in batches if not last.get(name(lo, top)) or cut_short(last[name(lo, top)])]
     stamp_ = lambda: datetime.now().strftime("%H:%M")  # noqa: E731
+    retry = sum(1 for lo, top in todo if last.get(name(lo, top)))
     print(f"{actor}: pages {a.from_id}-{hi} for {', '.join(names)}: {len(batches)} batches, "
-          f"{len(batches) - len(todo)} already done, {len(todo)} to go; cap ${a.max_cost:.2f} (${spent:.2f} already spent)")
+          f"{len(batches) - len(todo)} already done, {len(todo)} to go ({retry} of them retries); "
+          f"cap ${a.max_cost:.2f} (${spent:.2f} already spent)")
 
     # Pick up batches started by an earlier invocation that are still running.
     running = {r["run_id"]: r["dataset_name"] for r in con.execute(
