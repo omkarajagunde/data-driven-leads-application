@@ -115,6 +115,13 @@
   });
   let refiltering = $state(false);
   const matching = $derived(data?.regions.reduce((n, r) => n + r.projects, 0) ?? 0);
+  // The desktop panel and which of its parts are folded, remembered in this browser.
+  const DOCK_KEY = 'subak.dock';
+  const savedDock = (() => { try { return JSON.parse(localStorage.getItem(DOCK_KEY)) || {}; } catch { return {}; } })();
+  let dockOpen = $state(savedDock.open ?? true);
+  let secs = $state({ legend: true, filters: true, details: true, ...savedDock.secs });
+  $effect(() => { const v = JSON.stringify({ open: dockOpen, secs }); try { localStorage.setItem(DOCK_KEY, v); } catch {} });
+  const activeFilters = $derived((filtered ? 1 : 0) + (since ? 1 : 0) + (statusPicks.length ? 1 : 0));
   function toggleStatus(id) { statusPicks = statusPicks.includes(id) ? statusPicks.filter((x) => x !== id) : [...statusPicks, id].sort(); }
 
   const level = $derived(ready ? levelOf(zoom) : 0);
@@ -848,6 +855,53 @@
 
 </script>
 
+{#snippet legend()}
+    {#if level < 3}
+      <div class="mapkey__metrics" role="group" aria-label="Colour the map by">
+        {#each METRICS as mt (mt.id)}
+          <button type="button" class:is-on={metric === mt.id} aria-pressed={metric === mt.id} onclick={() => (metric = mt.id)}>{mt.name}</button>
+        {/each}
+      </div>
+      <div class="mapkey__scale">
+        <span class="mapkey__ramp" style:background="linear-gradient(90deg, {P.ramp.join(', ')})"></span>
+        <span class="mapkey__ends num"><span>{scale.lo}</span><span>{METRICS.find((x) => x.id === metric).hint}</span><span>{scale.hi}</span></span>
+      </div>
+      <p class="mapkey__none"><i></i>No {metric === 'supply' ? 'unit data' : 'price filed'} yet</p>
+      {#if level === 1 && data?.zones.some((z) => z.boundary_estimated)}<p class="mapkey__note">Zone shapes are estimated from pincode centres.</p>{/if}
+    {:else}
+      <ul class="mapkey__dots">
+        <li><i style:background={P.schedule.on_time}></i>On time</li>
+        <li><i style:background={P.schedule.late}></i>Late</li>
+        <li><i style:background={P.schedule.completed}></i>Completed</li>
+      </ul>
+    {/if}
+{/snippet}
+
+{#snippet filters()}
+    <div class="sizes" role="group" aria-label="Flat sizes shown">
+      <p class="sizes__label">Flat size {#if filtered}<button type="button" class="sizes__all" onclick={() => (sizePicks = [])}>Show all</button>{/if}</p>
+      <div class="sizes__chips">
+        {#each BHKS as b (b.id)}
+          <button type="button" class="chiptog" class:is-on={sizePicks.includes(b.id) && filtered} aria-pressed={sizePicks.includes(b.id) && filtered} onclick={() => toggleSize(b.id)}>{b.name}</button>
+        {/each}
+      </div>
+      {#if filtered}<p class="sizes__note">Sizes are estimated from carpet area. Projects that filed no flat sizes are hidden.</p>{/if}
+    </div>
+    <div class="sizes" role="group" aria-label="Registration year and status">
+      <p class="sizes__label">Registered {#if query}<button type="button" class="sizes__all" onclick={() => { since = ''; statusPicks = []; }}>Show all</button>{/if}</p>
+      <select class="yearpick" class:is-on={since} bind:value={since} aria-label="Registered in or after">
+        <option value="">Any year</option>
+        {#each YEARS as y (y)}<option value={String(y)}>{y} or later</option>{/each}
+      </select>
+      <div class="sizes__chips sizes__chips--status">
+        {#each STATUSES as st (st.id)}
+          <button type="button" class="chiptog" class:is-on={statusPicks.includes(st.id)} aria-pressed={statusPicks.includes(st.id)} title={st.hint} onclick={() => toggleStatus(st.id)}>{st.name}</button>
+        {/each}
+      </div>
+      {#if query}<p class="sizes__note" aria-live="polite">{refiltering ? 'Updating the map…' : `${num(matching)} projects match.${statusPicks.length > 1 ? ' A project can be in more than one state.' : ''}`}</p>{/if}
+    </div>
+{/snippet}
+
 <section class="quest" class:is-free={free} bind:this={section} id="map" aria-label="The map">
   <div class="quest__stage" bind:this={stageEl}>
     <div class="quest__map">
@@ -888,50 +942,13 @@
       {#if failed}<p class="quest__error" role="status">{failed}</p>{/if}
     </div>
 
-    <div class="mapkey">
-      {#if level < 3}
-        <div class="mapkey__metrics" role="group" aria-label="Colour the map by">
-          {#each METRICS as mt (mt.id)}
-            <button type="button" class:is-on={metric === mt.id} aria-pressed={metric === mt.id} onclick={() => (metric = mt.id)}>{mt.name}</button>
-          {/each}
-        </div>
-        <div class="mapkey__scale">
-          <span class="mapkey__ramp" style:background="linear-gradient(90deg, {P.ramp.join(', ')})"></span>
-          <span class="mapkey__ends num"><span>{scale.lo}</span><span>{METRICS.find((x) => x.id === metric).hint}</span><span>{scale.hi}</span></span>
-        </div>
-        <p class="mapkey__none"><i></i>No {metric === 'supply' ? 'unit data' : 'price filed'} yet</p>
-        {#if level === 1 && data?.zones.some((z) => z.boundary_estimated)}<p class="mapkey__note">Zone shapes are estimated from pincode centres.</p>{/if}
-      {:else}
-        <ul class="mapkey__dots">
-          <li><i style:background={P.schedule.on_time}></i>On time</li>
-          <li><i style:background={P.schedule.late}></i>Late</li>
-          <li><i style:background={P.schedule.completed}></i>Completed</li>
-        </ul>
-      {/if}
-      <div class="sizes" role="group" aria-label="Flat sizes shown">
-        <p class="sizes__label">Flat size {#if filtered}<button type="button" class="sizes__all" onclick={() => (sizePicks = [])}>Show all</button>{/if}</p>
-        <div class="sizes__chips">
-          {#each BHKS as b (b.id)}
-            <button type="button" class="chiptog" class:is-on={sizePicks.includes(b.id) && filtered} aria-pressed={sizePicks.includes(b.id) && filtered} onclick={() => toggleSize(b.id)}>{b.name}</button>
-          {/each}
-        </div>
-        {#if filtered}<p class="sizes__note">Sizes are estimated from carpet area. Projects that filed no flat sizes are hidden.</p>{/if}
+    {#if narrow}
+      <!-- Phones: the key and filters are one rail of chips on top, the card a sheet at the bottom. -->
+      <div class="mapkey">
+        {@render legend()}
+        {@render filters()}
       </div>
-      <div class="sizes" role="group" aria-label="Registration year and status">
-        <p class="sizes__label">Registered {#if query}<button type="button" class="sizes__all" onclick={() => { since = ''; statusPicks = []; }}>Show all</button>{/if}</p>
-        <select class="yearpick" class:is-on={since} bind:value={since} aria-label="Registered in or after">
-          <option value="">Any year</option>
-          {#each YEARS as y (y)}<option value={String(y)}>{y} or later</option>{/each}
-        </select>
-        <div class="sizes__chips sizes__chips--status">
-          {#each STATUSES as st (st.id)}
-            <button type="button" class="chiptog" class:is-on={statusPicks.includes(st.id)} aria-pressed={statusPicks.includes(st.id)} title={st.hint} onclick={() => toggleStatus(st.id)}>{st.name}</button>
-          {/each}
-        </div>
-        {#if query}<p class="sizes__note" aria-live="polite">{refiltering ? 'Updating the map…' : `${num(matching)} projects match.${statusPicks.length > 1 ? ' A project can be in more than one state.' : ''}`}</p>{/if}
-      </div>
-      <p class="mapkey__zoom num">zoom {zoom.toFixed(1)}</p>
-    </div>
+    {/if}
 
     {#if free}
       <div class="campad" role="group" aria-label="Camera">
@@ -945,34 +962,77 @@
       </div>
     {/if}
 
-    {#if hovered || selected}
-      <!-- One fixed place: hovering shows what is under the pointer here, leaving brings the docked card back. -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="quest__card" class:is-sheet={narrow} class:is-open={narrow && expanded} onmouseenter={keepCard} onmouseleave={() => { if (hovered) dropCard(); }}>
-        {#if narrow}
-          <!-- The phone sheet: a one-line peek over the map; swipe up or tap for everything. -->
-          <button type="button" class="sheet__handle" aria-expanded={expanded} aria-label={expanded ? 'Show less' : 'Show all details'}
-            onpointerdown={swipeStart} onpointerup={swipeEnd} onclick={() => { if (!swiped) expanded = !expanded; }}>
-            <span class="sheet__grip" aria-hidden="true"></span>
-            {#if level < 3}
-              <span class="sheet__scale" aria-hidden="true"><span class="num">{scale.lo}</span><i style:background="linear-gradient(90deg, {P.ramp.join(', ')})"></i><span class="num">{scale.hi}</span></span>
+    {#if narrow}
+        {#if hovered || selected}
+        <!-- One fixed place: hovering shows what is under the pointer here, leaving brings the docked card back. -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="quest__card" class:is-sheet={narrow} class:is-open={narrow && expanded} onmouseenter={keepCard} onmouseleave={() => { if (hovered) dropCard(); }}>
+          {#if narrow}
+            <!-- The phone sheet: a one-line peek over the map; swipe up or tap for everything. -->
+            <button type="button" class="sheet__handle" aria-expanded={expanded} aria-label={expanded ? 'Show less' : 'Show all details'}
+              onpointerdown={swipeStart} onpointerup={swipeEnd} onclick={() => { if (!swiped) expanded = !expanded; }}>
+              <span class="sheet__grip" aria-hidden="true"></span>
+              {#if level < 3}
+                <span class="sheet__scale" aria-hidden="true"><span class="num">{scale.lo}</span><i style:background="linear-gradient(90deg, {P.ramp.join(', ')})"></i><span class="num">{scale.hi}</span></span>
+              {:else}
+                <span class="sheet__dots" aria-hidden="true"><i style:background={P.schedule.on_time}></i>On time<i style:background={P.schedule.late}></i>Late<i style:background={P.schedule.completed}></i>Done</span>
+              {/if}
+              <span class="sheet__more">{expanded ? 'Less' : 'Details'}<span aria-hidden="true">{expanded ? ' ▾' : ' ▴'}</span></span>
+            </button>
+            {#if expanded}
+              <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} />
             {:else}
-              <span class="sheet__dots" aria-hidden="true"><i style:background={P.schedule.on_time}></i>On time<i style:background={P.schedule.late}></i>Late<i style:background={P.schedule.completed}></i>Done</span>
+              <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+              <div class="sheet__peek" onpointerdown={swipeStart} onpointerup={swipeEnd} onclick={(e) => { if (!swiped && !e.target.closest('a')) expanded = true; }}>
+                <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} peek />
+              </div>
             {/if}
-            <span class="sheet__more">{expanded ? 'Less' : 'Details'}<span aria-hidden="true">{expanded ? ' ▾' : ' ▴'}</span></span>
-          </button>
-          {#if expanded}
-            <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} />
           {:else}
-            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-            <div class="sheet__peek" onpointerdown={swipeStart} onpointerup={swipeEnd} onclick={(e) => { if (!swiped && !e.target.closest('a')) expanded = true; }}>
-              <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} peek />
-            </div>
+            <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} />
           {/if}
-        {:else}
-          <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} />
+        </div>
         {/if}
-      </div>
+    {:else}
+      <!-- Desktop: one panel for the key, the filters and the details, scrolling on its own. -->
+      <aside class="dock" class:is-closed={!dockOpen} aria-label="Map key, filters and details">
+        <button type="button" class="dock__bar" aria-expanded={dockOpen} onclick={() => (dockOpen = !dockOpen)}>
+          <span class="dock__title">Map panel</span>
+          {#if activeFilters}<span class="dock__badge num">{activeFilters} filter{activeFilters > 1 ? 's' : ''} on</span>{/if}
+          <span class="dock__chev" aria-hidden="true"></span>
+        </button>
+        {#if dockOpen}
+          <div class="dock__body">
+            <section class="dock__sec">
+              <button type="button" class="dock__head" aria-expanded={secs.legend} onclick={() => (secs.legend = !secs.legend)}>
+                {level < 3 ? 'Colour' : 'Legend'}<span class="dock__chev" aria-hidden="true"></span>
+              </button>
+              {#if secs.legend}<div class="dock__content">{@render legend()}</div>{/if}
+            </section>
+            <section class="dock__sec">
+              <button type="button" class="dock__head" aria-expanded={secs.filters} onclick={() => (secs.filters = !secs.filters)}>
+                <span>Filters{#if activeFilters}<span class="dock__count num">{activeFilters}</span>{/if}</span><span class="dock__chev" aria-hidden="true"></span>
+              </button>
+              {#if secs.filters}<div class="dock__content">{@render filters()}</div>{/if}
+            </section>
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <section class="dock__sec" onmouseenter={keepCard} onmouseleave={() => { if (hovered) dropCard(); }}>
+              <button type="button" class="dock__head" aria-expanded={secs.details} onclick={() => (secs.details = !secs.details)}>
+                <span>Details{#if hovered}<span class="dock__live">under the pointer</span>{/if}</span><span class="dock__chev" aria-hidden="true"></span>
+              </button>
+              {#if secs.details}
+                <div class="dock__content">
+                  {#if hovered || selected}
+                    <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} />
+                  {:else}
+                    <p class="dock__empty">Point at the map, or click a place, to see its figures here.</p>
+                  {/if}
+                </div>
+              {/if}
+            </section>
+            <p class="mapkey__zoom num">zoom {zoom.toFixed(1)}</p>
+          </div>
+        {/if}
+      </aside>
     {/if}
   </div>
 </section>

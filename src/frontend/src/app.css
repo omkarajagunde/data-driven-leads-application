@@ -147,7 +147,7 @@ h1, h2, h3 { line-height: 1.02; }
 .quest__error { font-size: var(--text-sm); color: var(--color-error); }
 
 .quest__map { position: absolute; inset: 0; isolation: isolate; }
-/* the insight card: docked in a corner; hovering shows the place under the pointer there */
+/* the insight card: on phones, the bottom sheet (on desktop it sits in the panel above) */
 .quest__card { position: absolute; z-index: 4; right: var(--gutter); bottom: var(--space-xl); width: min(21rem, calc(100% - 2 * var(--gutter))); max-height: calc(100svh - 15rem); overflow-y: auto; border-radius: var(--radius-entry); scrollbar-width: thin; }
 .map { height: 100%; background: var(--map-ground); font-family: var(--font-body); z-index: 0; }
 .map__vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(130% 110% at 50% 45%, transparent 60%, color-mix(in oklab, var(--color-night) 85%, transparent)); }
@@ -164,6 +164,26 @@ h1, h2, h3 { line-height: 1.02; }
 .campad__btn { min-width: 40px; height: 40px; padding: 0 var(--space-xs); border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--color-ink); font-size: 1.25rem; line-height: 1; font-weight: 600; cursor: pointer; touch-action: none; user-select: none; transition: background-color var(--dur-micro) var(--ease-out); }
 .campad__btn:hover, .campad__btn:active { background: var(--color-paper-2); }
 .campad__mode { color: var(--color-accent-text); font-size: var(--text-sm); }
+
+/* desktop: one panel on the right for the key, the filters and the details; it scrolls on its own
+ * and each part folds, so nothing in it ever lands on top of something else */
+.dock { --dock-top: calc(var(--space-3xl) + var(--space-lg)); position: absolute; z-index: 4; top: var(--dock-top); right: var(--gutter); display: flex; flex-direction: column; width: min(22rem, 40vw); max-height: calc(100% - var(--dock-top) - var(--space-xl)); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-card); background: color-mix(in oklab, var(--color-night) 88%, transparent); backdrop-filter: blur(12px); box-shadow: var(--shadow-float); font-size: var(--text-xs); overflow: hidden; }
+.dock__bar, .dock__head { display: flex; align-items: center; gap: var(--space-xs); width: 100%; border: 0; background: none; color: var(--color-ink); font: inherit; text-align: left; cursor: pointer; }
+.dock__bar { flex: none; min-height: 44px; padding: 0 var(--space-sm); font-weight: 700; font-size: var(--text-sm); }
+.dock__bar:hover, .dock__head:hover { color: var(--color-accent-text); }
+.dock__title { flex: 1; }
+.dock__badge { padding: 2px 8px; border-radius: 999px; background: var(--color-accent); color: var(--color-accent-ink); font-size: 0.6875rem; font-weight: 700; }
+.dock__chev { flex: none; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform var(--dur-micro) var(--ease-out); opacity: 0.7; }
+[aria-expanded="false"] > .dock__chev { transform: translateY(1px) rotate(-135deg); }
+.dock__body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; padding: 0 var(--space-sm) var(--space-sm); }
+.dock__sec { border-top: var(--rule-hair) solid var(--color-rule); }
+.dock__head { justify-content: space-between; min-height: 38px; color: var(--color-muted); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; font-size: 0.6875rem; }
+.dock__count { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--color-accent); color: var(--color-accent-ink); letter-spacing: 0; }
+.dock__live { margin-left: 8px; color: var(--color-accent-text); letter-spacing: 0; text-transform: none; font-weight: 600; }
+.dock__content { display: grid; gap: var(--space-xs); padding-bottom: var(--space-sm); }
+.dock__empty { color: var(--color-muted); line-height: 1.4; }
+.dock .insight { padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; backdrop-filter: none; animation: none; }
+.dock .mapkey__zoom { padding-top: var(--space-xs); border-top: var(--rule-hair) solid var(--color-rule); }
 
 /* the map key: what colour means, and the metric switch */
 .mapkey { position: absolute; z-index: 3; top: calc(var(--space-3xl) + var(--space-lg)); right: var(--gutter); display: grid; gap: var(--space-xs); width: min(19rem, 40vw); padding: var(--space-sm); border: var(--rule-hair) solid var(--color-rule); border-radius: var(--radius-card); background: color-mix(in oklab, var(--color-night) 82%, transparent); backdrop-filter: blur(10px); font-size: var(--text-xs); }
