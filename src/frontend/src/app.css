@@ -147,9 +147,8 @@ h1, h2, h3 { line-height: 1.02; }
 .quest__error { font-size: var(--text-sm); color: var(--color-error); }
 
 .quest__map { position: absolute; inset: 0; isolation: isolate; }
-/* the insight card: beside the pointer on hover, docked in a corner otherwise */
+/* the insight card: docked in a corner; hovering shows the place under the pointer there */
 .quest__card { position: absolute; z-index: 4; right: var(--gutter); bottom: var(--space-xl); width: min(21rem, calc(100% - 2 * var(--gutter))); max-height: calc(100svh - 15rem); overflow-y: auto; border-radius: var(--radius-entry); scrollbar-width: thin; }
-.quest__card.is-hover { right: auto; bottom: auto; max-height: none; overflow: visible; }
 .map { height: 100%; background: var(--map-ground); font-family: var(--font-body); z-index: 0; }
 .map__vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(130% 110% at 50% 45%, transparent 60%, color-mix(in oklab, var(--color-night) 85%, transparent)); }
 .quest:not(.is-free) .maplibregl-ctrl-group { display: none; }

@@ -83,9 +83,7 @@
   let expanded = $state(false);
   let sheetFor = null;
   $effect(() => { const id = selected?.data?.id; if (id !== sheetFor) { sheetFor = id; expanded = false; } });
-  let hovered = $state(null); // the floating card beside the pointer
-  let pointer = $state(null);
-  let cardH = $state(0);
+  let hovered = $state(null); // what the pointer is on: shown in the docked card's place until it leaves
   let scale = $state({ lo: '', hi: '' });
   // Flat sizes kept on the map. All four selected means no filter.
   const BHKS = [{ id: '1', name: '1 BHK' }, { id: '2', name: '2 BHK' }, { id: '3', name: '3 BHK' }, { id: '4', name: '4+ BHK' }];
@@ -609,10 +607,8 @@
         map.getCanvas().style.cursor = 'pointer';
         keepCard();
         stopOrbit();
-        // the card stays where it opened, so the pointer can travel into it and use its link
         if (hovered?.kind === f.properties.kind && hovered?.data?.id === f.properties.id) return;
         setHover(source, f.properties.id);
-        pointer = e.point;
         hovered = recordOf(f.properties.kind, f.properties.id);
       });
       map.on('mouseleave', layer, () => {
@@ -633,7 +629,8 @@
       });
     }
   }
-  // A hover card lingers briefly after the pointer leaves its feature, and stays while the pointer is on it.
+  // A hovered card lingers briefly after the pointer leaves its feature, so moving between features does
+  // not flash the docked card back, and it stays while the pointer is on the card itself.
   let cardTimer = 0;
   function keepCard() { clearTimeout(cardTimer); }
   function dropCard(now = false) {
@@ -849,14 +846,6 @@
     setTimeout(() => (swiped = false), 50);
   }
 
-  // Beside the pointer, flipped to whichever side has room.
-  const cardStyle = $derived.by(() => {
-    if (!hovered || !pointer || !stageEl) return '';
-    const w = stageEl.clientWidth, h = stageEl.clientHeight, cw = Math.min(340, w - 32);
-    const left = pointer.x + 24 + cw > w ? pointer.x - 24 - cw : pointer.x + 24;
-    const top = clamp(pointer.y - 70, 84, Math.max(84, h - cardH - 16));
-    return `left:${Math.max(8, left)}px;top:${top}px;width:${cw}px`;
-  });
 </script>
 
 <section class="quest" class:is-free={free} bind:this={section} id="map" aria-label="The map">
@@ -956,13 +945,10 @@
       </div>
     {/if}
 
-    {#if hovered}
+    {#if hovered || selected}
+      <!-- One fixed place: hovering shows what is under the pointer here, leaving brings the docked card back. -->
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="quest__card is-hover" style={cardStyle} bind:clientHeight={cardH} onmouseenter={keepCard} onmouseleave={() => dropCard()}>
-        <InsightCard record={hovered} quarters={data?.quarters} {currency} {sizes} />
-      </div>
-    {:else if selected}
-      <div class="quest__card" class:is-sheet={narrow} class:is-open={narrow && expanded}>
+      <div class="quest__card" class:is-sheet={narrow} class:is-open={narrow && expanded} onmouseenter={keepCard} onmouseleave={() => { if (hovered) dropCard(); }}>
         {#if narrow}
           <!-- The phone sheet: a one-line peek over the map; swipe up or tap for everything. -->
           <button type="button" class="sheet__handle" aria-expanded={expanded} aria-label={expanded ? 'Show less' : 'Show all details'}
@@ -976,15 +962,15 @@
             <span class="sheet__more">{expanded ? 'Less' : 'Details'}<span aria-hidden="true">{expanded ? ' ▾' : ' ▴'}</span></span>
           </button>
           {#if expanded}
-            <InsightCard record={selected} quarters={data?.quarters} {currency} {sizes} />
+            <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} />
           {:else}
             <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
             <div class="sheet__peek" onpointerdown={swipeStart} onpointerup={swipeEnd} onclick={(e) => { if (!swiped && !e.target.closest('a')) expanded = true; }}>
-              <InsightCard record={selected} quarters={data?.quarters} {currency} {sizes} peek />
+              <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} peek />
             </div>
           {/if}
         {:else}
-          <InsightCard record={selected} quarters={data?.quarters} {currency} {sizes} />
+          <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} />
         {/if}
       </div>
     {/if}
