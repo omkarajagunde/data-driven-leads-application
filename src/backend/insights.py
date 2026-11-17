@@ -25,6 +25,40 @@ BHK_CASE = """CASE WHEN u.carpet_area_sqft < 550 THEN '1' WHEN u.carpet_area_sqf
                    WHEN u.carpet_area_sqft < 1250 THEN '3' ELSE '4' END"""
 BHK_KEYS = ("1", "2", "3", "4")
 
+# Map filter: registered on or after a year, and in any of the picked states. The states overlap
+# (an active project can also be due for possession and have applied for an extension).
+# K-RERA files no registration date, so its project start date stands in.
+REGISTERED = r"""coalesce(p.registration_date, CASE WHEN p.details->>'project_start_date' ~ '^\d{2}-\d{2}-\d{4}$'
+                 THEN to_date(p.details->>'project_start_date', 'DD-MM-YYYY') END)"""
+CLOSED = "('Completed', 'Lapsed', 'De-Registered', 'Revoked', 'Under Abeyance As Per Order')"
+STATUSES = {
+    "active": "p.registration_status IN ('Active', 'Ongoing', 'New Project Launch')",
+    "new": f"{REGISTERED} > current_date - interval '90 days'",
+    "due": f"""p.revised_completion_date BETWEEN current_date AND current_date + interval '6 months'
+               AND coalesce(p.registration_status, '') NOT IN {CLOSED}""",
+    # extensions the builder asked for; the blanket Covid-era order extended everyone and does not count
+    "extension": """EXISTS (SELECT 1 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(p.details->'extensions') = 'array'
+                    THEN p.details->'extensions' ELSE '[]' END) e WHERE NOT coalesce((e->>'generalOrder')::boolean, false))""",
+    "completed": "p.registration_status = 'Completed'",
+    "lapsed": "p.registration_status = 'Lapsed'",
+    "cancelled": "p.registration_status IN ('De-Registered', 'Revoked', 'Under Abeyance As Per Order')",
+}
+
+
+def project_filter(con, since: int | None = None, status: tuple = ()) -> str:
+    """An ' AND ...' condition on projects `p`, or '' for no filter. Inputs are checked, never quoted in.
+    The matching projects are found once and passed on as ids: the tests read the large details
+    column, and the map's queries would otherwise read it again each time."""
+    tests = []
+    if since:
+        tests.append(f"{REGISTERED} >= make_date({int(since)}, 1, 1)")
+    if status:
+        tests.append("(" + " OR ".join(f"({STATUSES[k]})" for k in status) + ")")
+    if not tests:
+        return ""
+    ids = [r["project_id"] for r in con.execute(f"SELECT p.project_id FROM projects p WHERE {' AND '.join(tests)}")]
+    return f" AND p.project_id = ANY('{{{','.join(map(str, ids))}}}'::bigint[])" if ids else " AND false"
+
 
 def bhk_rows(con, by: str, where: str = "", params: tuple = ()) -> dict:
     """{key: {bhk: [flats, unsold, priced flats, sum of their price per sq ft, projects]}} grouped by `by`.
@@ -43,7 +77,7 @@ def bhk_rows(con, by: str, where: str = "", params: tuple = ()) -> dict:
     return out
 
 
-def bhk_masks(con) -> dict:
+def bhk_masks(con, cond: str = "") -> dict:
     """{pincode: {mask: projects}}: which mix of BHKs each project offers (bit 0 = 1 BHK ... bit 3 = 4+),
     so the map can count projects for any selection without counting one project twice."""
     out: dict = {}
@@ -51,7 +85,7 @@ def bhk_masks(con) -> dict:
             WITH m AS (
                 SELECT p.pincode, u.project_id, bit_or(1 << (({BHK_CASE})::int - 1)) AS mask
                 FROM units u JOIN projects p ON p.project_id = u.project_id
-                WHERE u.carpet_area_sqft > 0 GROUP BY 1, 2)
+                WHERE u.carpet_area_sqft > 0 {cond} GROUP BY 1, 2)
             SELECT pincode, mask, count(*) AS n FROM m GROUP BY 1, 2"""):
         out.setdefault(r["pincode"], {})[str(r["mask"])] = r["n"]
     return out
@@ -134,28 +168,34 @@ def headline(x: dict, key: str) -> dict:
     }
 
 
-def build(con) -> dict:
+def build(con, since: int | None = None, status: tuple = ()) -> dict:
     rate = m.usd_rate(con)
-    regions_m = m.area_metrics(con, "region")
-    zones_m = m.area_metrics(con, "zone")
-    pins_m = m.area_metrics(con, "pincode")
+    cond = project_filter(con, since, status)
+    regions_m = m.area_metrics(con, "region", cond=cond)
+    zones_m = m.area_metrics(con, "zone", cond=cond)
+    pins_m = m.area_metrics(con, "pincode", cond=cond)
     empty = m.empty_metrics()
+    # Filtered, a pincode may have no projects left; it stays on the map where all its projects sit.
+    centres = {r["pincode"]: r for r in con.execute("""
+        SELECT p.pincode, percentile_cont(0.5) WITHIN GROUP (ORDER BY p.latitude) AS latitude,
+               percentile_cont(0.5) WITHIN GROUP (ORDER BY p.longitude) AS longitude
+        FROM projects p WHERE p.latitude IS NOT NULL GROUP BY 1""")} if cond else {}
 
     builders: dict[str, list] = {}
-    for r in con.execute("""
-            SELECT pincode, developer_name, count(*) AS projects FROM projects
-            WHERE developer_name IS NOT NULL AND pincode IS NOT NULL
+    for r in con.execute(f"""
+            SELECT pincode, developer_name, count(*) AS projects FROM projects p
+            WHERE developer_name IS NOT NULL AND pincode IS NOT NULL {cond}
             GROUP BY pincode, developer_name ORDER BY pincode, count(*) DESC, developer_name"""):
         lst = builders.setdefault(r["pincode"], [])
         if len(lst) < 3:
             lst.append({"name": r["developer_name"], "projects": r["projects"]})
 
-    building = {r["pincode"]: r["n"] for r in con.execute("""
-        SELECT pincode, count(*) AS n FROM projects
-        WHERE coalesce(schedule_status, '') <> 'completed' GROUP BY pincode""")}
+    building = {r["pincode"]: r["n"] for r in con.execute(f"""
+        SELECT pincode, count(*) AS n FROM projects p
+        WHERE coalesce(schedule_status, '') <> 'completed' {cond} GROUP BY pincode""")}
 
-    pin_bhk = bhk_rows(con, "p.pincode")
-    pin_mask = bhk_masks(con)
+    pin_bhk = bhk_rows(con, "p.pincode", cond)
+    pin_mask = bhk_masks(con, cond)
 
     outline = {r["pincode"]: r["geometry"] for r in con.execute("SELECT pincode, geometry FROM pincode_boundaries")}
     zone_outline = {(r["region_id"], r["zone_id"]): r for r in con.execute(
@@ -164,8 +204,9 @@ def build(con) -> dict:
     pincodes = []
     for r in con.execute("SELECT pincode, region_id, zone_id, areas, latitude, longitude FROM pincodes ORDER BY pincode"):
         x = pins_m.get((r["region_id"], r["zone_id"], r["pincode"]), empty)
-        lat = r["latitude"] if r["latitude"] is not None else x["centre"]["latitude"]
-        lng = r["longitude"] if r["longitude"] is not None else x["centre"]["longitude"]
+        centre = centres.get(r["pincode"]) or x["centre"]
+        lat = r["latitude"] if r["latitude"] is not None else centre["latitude"]
+        lng = r["longitude"] if r["longitude"] is not None else centre["longitude"]
         if lat is None:
             continue
         bands = x["size_bands"]
@@ -231,6 +272,7 @@ def build(con) -> dict:
     totals["agreed_inr"] = float(totals["agreed_inr"])
 
     return {"quarters": quarter_labels(), "sample_trends": True, "totals": totals, "inr_per_usd": rate,
+            "filter": {"since": since, "status": list(status)},
             "bhk_ranges": {"1": [0, 550], "2": [550, 850], "3": [850, 1250], "4": [1250, None]},
             "regions": regions, "zones": zones, "pincodes": pincodes}
 
@@ -241,12 +283,15 @@ CACHE_SECONDS = 600
 _cache: dict = {}
 
 
-def cached(con) -> dict:
-    hit = _cache.get("build")
+def cached(con, since: int | None = None, status: tuple = ()) -> dict:
+    key = (since, tuple(sorted(status)))
+    hit = _cache.get(key)
     if hit and time.monotonic() - hit[0] < CACHE_SECONDS:
         return hit[1]
-    value = build(con)
-    _cache["build"] = (time.monotonic(), value)
+    value = build(con, *key)
+    if len(_cache) >= 24:  # each filter is kept separately; drop the oldest
+        _cache.pop(min(_cache, key=lambda k: _cache[k][0]))
+    _cache[key] = (time.monotonic(), value)
     return value
 
 
@@ -256,15 +301,17 @@ PROJECT_SQL = """
            p.price_per_sqft, p.complaint_count, p.pending_litigation_count, p.revised_completion_date,
            p.project_id, p.rera_authority, p.source_url
     FROM projects p JOIN pincodes pc ON pc.pincode = p.pincode
-    WHERE p.latitude BETWEEN %s AND %s AND p.longitude BETWEEN %s AND %s
+    WHERE p.latitude BETWEEN %s AND %s AND p.longitude BETWEEN %s AND %s {cond}
     ORDER BY p.total_units DESC NULLS LAST
     LIMIT %s"""
 
 
-def projects_in(con, south: float, west: float, north: float, east: float, limit: int = 1500) -> dict:
+def projects_in(con, south: float, west: float, north: float, east: float, limit: int = 1500,
+                since: int | None = None, status: tuple = ()) -> dict:
     """The projects inside a map view, biggest first; the map asks for these only when zoomed in."""
     rate = m.usd_rate(con)
-    rows = con.execute(PROJECT_SQL, (south, north, west, east, limit + 1)).fetchall()
+    sql = PROJECT_SQL.format(cond=project_filter(con, since, status))
+    rows = con.execute(sql, (south, north, west, east, limit + 1)).fetchall()
     ids = [r["project_id"] for r in rows[:limit]]
     sizes = bhk_rows(con, "u.project_id", "AND u.project_id = ANY(%s)", (ids,)) if ids else {}
     out = [{

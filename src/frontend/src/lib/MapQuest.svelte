@@ -94,6 +94,30 @@
   const sizes = $derived(sizePicks.length && sizePicks.length < BHKS.length ? sizePicks : BHKS.map((b) => b.id));
   const filtered = $derived(sizes.length < BHKS.length);
   function toggleSize(id) { sizePicks = sizePicks.includes(id) ? sizePicks.filter((x) => x !== id) : [...sizePicks, id].sort(); }
+  // Which projects count at all: registered from a year on, in any of the picked states. Unlike flat
+  // sizes this is worked out on the server, so a change fetches the map's figures again.
+  const STATUSES = [
+    { id: 'active', name: 'Active', hint: 'Registration is in force' },
+    { id: 'new', name: 'Just registered', hint: 'Registered in the last 90 days' },
+    { id: 'due', name: 'Possession due', hint: 'Completion date in the next 6 months' },
+    { id: 'extension', name: 'Extension applied', hint: 'The builder asked RERA for more time' },
+    { id: 'completed', name: 'Completed', hint: 'Registration closed as completed' },
+    { id: 'lapsed', name: 'Lapsed', hint: 'Registration ran out without completion' },
+    { id: 'cancelled', name: 'Cancelled', hint: 'De-registered, revoked or held in abeyance' },
+  ];
+  const THIS_YEAR = new Date().getFullYear();
+  const YEARS = Array.from({ length: THIS_YEAR - 2017 + 1 }, (_, i) => THIS_YEAR - i); // RERA registration began in 2017
+  let since = $state('');
+  let statusPicks = $state([]);
+  const query = $derived.by(() => {
+    const q = new URLSearchParams();
+    if (since) q.set('since', since);
+    if (statusPicks.length) q.set('status', statusPicks.join(','));
+    return q.size ? `?${q}` : '';
+  });
+  let refiltering = $state(false);
+  const matching = $derived(data?.regions.reduce((n, r) => n + r.projects, 0) ?? 0);
+  function toggleStatus(id) { statusPicks = statusPicks.includes(id) ? statusPicks.filter((x) => x !== id) : [...statusPicks, id].sort(); }
 
   const level = $derived(ready ? levelOf(zoom) : 0);
   const fill = (i) => (free ? (i <= level ? 1 : 0) : clamp(progress * 4 - i, 0, 1));
@@ -119,6 +143,7 @@
   $effect(() => { if (P !== C && map && ready) rebuild(); });
   // (paint also refreshes the open cards, so it runs untracked or it would re-trigger itself)
   $effect(() => { metric; currency; sizes; if (ready) untrack(paint); });
+  $effect(() => { const q = query; if (ready) untrack(() => refilter(q)); });
 
   function track() {
     if (!section) return;
@@ -384,13 +409,14 @@
     lock(true);
     map.addControl(new maplibre.NavigationControl({ visualizePitch: true }), 'bottom-left');
     try {
-      [data] = await Promise.all([api('/v1/map/insights'), new Promise((r) => map.once('load', r))]);
+      const q = query;
+      const [res] = await Promise.all([api(`/v1/map/insights${q}`), new Promise((r) => map.once('load', r))]);
+      shown = q;
+      adopt(res);
     } catch (e) {
       failed = 'The map could not load its figures. Is the API running?';
       return;
     }
-    data.projects = []; // filled per view by loadProjects(), only once the map is zoomed in that far
-    for (const kind of Object.keys(PLURAL)) for (const d of data[PLURAL[kind]]) byId.set(`${kind}:${d.id}`, d);
     tune();
     layers();
     views = plan();
@@ -405,6 +431,36 @@
   }
 
   let watching = false, camera = null;
+
+  // Take a fresh payload: projects are filled per view by loadProjects(), once zoomed in that far.
+  // (a copy, because api() keeps the response and the projects list changes)
+  function adopt(res) {
+    data = { ...res, projects: [] };
+    byId.clear();
+    fetchedViews.clear();
+    for (const kind of Object.keys(PLURAL)) for (const d of data[PLURAL[kind]]) byId.set(`${kind}:${d.id}`, d);
+  }
+
+  // The year or status filter changed: swap in the figures for it and fetch projects again.
+  let shown = '';
+  async function refilter(q) {
+    if (q === shown) return;
+    shown = q;
+    refiltering = true;
+    try {
+      const res = await api(`/v1/map/insights${q}`);
+      if (q !== shown || !map) return;
+      adopt(res);
+      paint();
+      picked = false;
+      settle(true);
+      loadProjects();
+    } catch (e) {
+      failed = 'The map could not load figures for that filter. Try again.';
+    } finally {
+      if (q === shown) refiltering = false;
+    }
+  }
   function rebuild() {
     camera = { center: map.getCenter(), zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() };
     stopOrbit(); stopSteer();
@@ -642,9 +698,11 @@
     fetchedViews.add(key);
     try {
       // (plain fetch, not the cached api(): views are remembered above, and the cache would keep every response)
-      const r = await fetch(`/api/v1/map/projects?south=${box.south}&west=${box.west}&north=${box.north}&east=${box.east}`);
+      const q = shown;
+      const r = await fetch(`/api/v1/map/projects?south=${box.south}&west=${box.west}&north=${box.north}&east=${box.east}${q ? `&${q.slice(1)}` : ''}`);
       if (!r.ok) throw new Error(String(r.status));
       const res = await r.json();
+      if (q !== shown) return; // the filter changed while this view was loading
       const all = new Map(data.projects.map((p) => [p.id, p]));
       for (const p of res.projects) all.set(p.id, p);
       data.projects = [...all.values()].slice(-KEEP);
@@ -869,6 +927,19 @@
           {/each}
         </div>
         {#if filtered}<p class="sizes__note">Sizes are estimated from carpet area. Projects that filed no flat sizes are hidden.</p>{/if}
+      </div>
+      <div class="sizes" role="group" aria-label="Registration year and status">
+        <p class="sizes__label">Registered {#if query}<button type="button" class="sizes__all" onclick={() => { since = ''; statusPicks = []; }}>Show all</button>{/if}</p>
+        <select class="yearpick" class:is-on={since} bind:value={since} aria-label="Registered in or after">
+          <option value="">Any year</option>
+          {#each YEARS as y (y)}<option value={String(y)}>{y} or later</option>{/each}
+        </select>
+        <div class="sizes__chips sizes__chips--status">
+          {#each STATUSES as st (st.id)}
+            <button type="button" class="chiptog" class:is-on={statusPicks.includes(st.id)} aria-pressed={statusPicks.includes(st.id)} title={st.hint} onclick={() => toggleStatus(st.id)}>{st.name}</button>
+          {/each}
+        </div>
+        {#if query}<p class="sizes__note" aria-live="polite">{refiltering ? 'Updating the map…' : `${num(matching)} projects match.${statusPicks.length > 1 ? ' A project can be in more than one state.' : ''}`}</p>{/if}
       </div>
       <p class="mapkey__zoom num">zoom {zoom.toFixed(1)}</p>
     </div>

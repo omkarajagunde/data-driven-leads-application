@@ -404,21 +404,35 @@ def map_pincodes(con=Depends(get_con), _=Depends(require_key)):
     return out
 
 
+SINCE = Query(None, ge=2000, le=2100, description="Only projects registered on or after 1 January of this year")
+STATUS = Query(None, description="Only projects in any of these states, comma-separated: " + ", ".join(insights.STATUSES))
+
+
+def statuses(status: str | None) -> tuple:
+    picked = tuple(sorted({s.strip() for s in (status or "").split(",") if s.strip()}))
+    unknown = [s for s in picked if s not in insights.STATUSES]
+    if unknown:
+        raise HTTPException(422, f"Unknown status {', '.join(unknown)}; use {', '.join(insights.STATUSES)}.")
+    return picked
+
+
 @app.get("/v1/map/insights", tags=["map"],
          summary="Everything the landing-page map draws: regions, zones, pincodes and projects with level-specific insights")
-def map_insights(con=Depends(get_con), _=Depends(require_key)) -> dict:
+def map_insights(since: int | None = SINCE, status: str | None = STATUS,
+                 con=Depends(get_con), _=Depends(require_key)) -> dict:
     """Quarterly trends in this payload are sample data (`sample: true`) until real snapshot history exists.
     Projects are not in this payload; the map asks `/v1/map/projects` for the ones in view."""
-    return insights.cached(con)
+    return insights.cached(con, since, statuses(status))
 
 
 @app.get("/v1/map/projects", tags=["map"], summary="Projects inside a map view (biggest first)")
 def map_projects(south: float = Query(..., ge=-90, le=90), west: float = Query(..., ge=-180, le=180),
                  north: float = Query(..., ge=-90, le=90), east: float = Query(..., ge=-180, le=180),
-                 limit: int = Query(1500, ge=1, le=3000), con=Depends(get_con), _=Depends(require_key)) -> dict:
+                 limit: int = Query(1500, ge=1, le=3000), since: int | None = SINCE, status: str | None = STATUS,
+                 con=Depends(get_con), _=Depends(require_key)) -> dict:
     if north - south > 1.5 or east - west > 1.5:
         raise HTTPException(422, "Zoom in further: a view may span at most 1.5 degrees.")
-    return insights.projects_in(con, south, west, north, east, limit)
+    return insights.projects_in(con, south, west, north, east, limit, since, statuses(status))
 
 
 @app.get("/v1/map/points", tags=["map"], summary="A light sample of project positions for the landing page")

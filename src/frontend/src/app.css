@@ -192,6 +192,10 @@ h1, h2, h3 { line-height: 1.02; }
 .chiptog:hover { border-color: var(--color-muted); color: var(--color-ink); }
 .chiptog.is-on { border-color: var(--color-accent); background: var(--color-accent); color: var(--color-accent-ink); }
 .sizes__note { color: var(--color-muted); line-height: 1.4; }
+.sizes__chips--status { grid-template-columns: repeat(2, 1fr); }
+.yearpick { min-height: 34px; padding: 0 8px; border: var(--rule-hair) solid var(--color-rule); border-radius: 8px; background: transparent; color: var(--color-ink-2); font: inherit; font-weight: 600; cursor: pointer; }
+.yearpick option { background: var(--color-paper-2); color: var(--color-ink); }
+.yearpick.is-on { border-color: var(--color-accent); color: var(--color-ink); }
 
 /* ---------------------------------------------------------------- the insight card */
 .insight { display: grid; gap: var(--space-sm); padding: var(--space-md); border: var(--rule-hair) solid color-mix(in oklab, var(--color-ink) 16%, transparent); border-radius: var(--radius-entry); background: color-mix(in oklab, var(--color-paper-2) 92%, transparent); backdrop-filter: blur(14px); box-shadow: var(--shadow-float), inset 0 1px 0 rgb(255 255 255 / 0.05); animation: card-in 180ms var(--ease-out); }
@@ -439,6 +443,8 @@ h1, h2, h3 { line-height: 1.02; }
   .mapkey__metrics button { min-height: 32px; padding: 0 12px; border-radius: 999px; font-size: var(--text-xs); }
   .sizes { display: flex; }
   .sizes__chips { display: flex; gap: 6px; }
+  .sizes { gap: 6px; }
+  .yearpick { min-height: 36px; padding: 0 10px; border-radius: 999px; background: color-mix(in oklab, var(--color-paper-2) 97%, transparent); box-shadow: 0 4px 14px -6px rgb(0 0 0 / 0.5); font-size: var(--text-xs); }
   .chiptog { min-height: 36px; padding: 0 12px; border-radius: 999px; background: color-mix(in oklab, var(--color-paper-2) 97%, transparent); box-shadow: 0 4px 14px -6px rgb(0 0 0 / 0.5); font-size: var(--text-xs); }
 
   /* the sheet: peek by default, two thirds of the screen when opened */

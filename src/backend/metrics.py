@@ -89,8 +89,9 @@ UNIT_AGG = """
     max(u.price_per_sqft) FILTER (WHERE u.price_per_sqft > 0)  AS ppsf_max"""
 
 
-def area_metrics(con, level: str, region_id=None, zone_id=None, pincode=None) -> dict:
-    """Metrics for every area at `level` inside the given filter, keyed by the area's id tuple."""
+def area_metrics(con, level: str, region_id=None, zone_id=None, pincode=None, cond: str = "") -> dict:
+    """Metrics for every area at `level` inside the given filter, keyed by the area's id tuple.
+    `cond` is an extra SQL condition on projects `p` (see insights.project_filter)."""
     keys = KEYS[level]
     cols = ", ".join(keys)
     where, params = ["true"], []
@@ -98,7 +99,7 @@ def area_metrics(con, level: str, region_id=None, zone_id=None, pincode=None) ->
         if val is not None:
             where.append(f"{col} = %s")
             params.append(val)
-    where = " AND ".join(where)
+    where = " AND ".join(where) + cond
     scope = f"FROM projects p JOIN pincodes pc ON pc.pincode = p.pincode WHERE {where}"
     rate = usd_rate(con)
     key_of = lambda r: tuple(r[k.split(".")[1]] for k in keys)  # noqa: E731
