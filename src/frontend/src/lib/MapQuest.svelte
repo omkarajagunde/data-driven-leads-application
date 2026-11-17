@@ -1,5 +1,5 @@
 <script>
-  import { onDestroy, onMount } from 'svelte';
+  import { onDestroy, onMount, untrack } from 'svelte';
   import { api } from './api.js';
   import { num } from './format.js';
   import InsightCard from './InsightCard.svelte';
@@ -87,6 +87,13 @@
   let pointer = $state(null);
   let cardH = $state(0);
   let scale = $state({ lo: '', hi: '' });
+  // Flat sizes kept on the map. All four selected means no filter.
+  const BHKS = [{ id: '1', name: '1 BHK' }, { id: '2', name: '2 BHK' }, { id: '3', name: '3 BHK' }, { id: '4', name: '4+ BHK' }];
+  // Filter chips: nothing picked shows every size; picking 2 BHK shows only 2 BHK; picking more adds to it.
+  let sizePicks = $state([]);
+  const sizes = $derived(sizePicks.length && sizePicks.length < BHKS.length ? sizePicks : BHKS.map((b) => b.id));
+  const filtered = $derived(sizes.length < BHKS.length);
+  function toggleSize(id) { sizePicks = sizePicks.includes(id) ? sizePicks.filter((x) => x !== id) : [...sizePicks, id].sort(); }
 
   const level = $derived(ready ? levelOf(zoom) : 0);
   const fill = (i) => (free ? (i <= level ? 1 : 0) : clamp(progress * 4 - i, 0, 1));
@@ -105,18 +112,20 @@
     window.addEventListener('resize', onScroll);
     return () => { window.removeEventListener('scroll', onScroll); window.removeEventListener('resize', onScroll); };
   });
-  onDestroy(() => { cancelAnimationFrame(orbit); map?.remove(); });
+  onDestroy(() => { cancelAnimationFrame(orbit); map?.remove(); document.documentElement.classList.remove('is-mapview'); });
 
   $effect(() => { if (mapEl && !map) start(); });
   // A new theme or style needs a new basemap and new layer colours: rebuild the map, keep the camera.
   $effect(() => { if (P !== C && map && ready) rebuild(); });
-  $effect(() => { metric; currency; if (ready) paint(); });
+  // (paint also refreshes the open cards, so it runs untracked or it would re-trigger itself)
+  $effect(() => { metric; currency; sizes; if (ready) untrack(paint); });
 
   function track() {
     if (!section) return;
     const box = section.getBoundingClientRect();
     const run = box.height - window.innerHeight;
     progress = run > 0 ? clamp(-box.top / run, 0, 1) : 0;
+    document.documentElement.classList.toggle('is-mapview', box.top <= 1 && box.bottom >= window.innerHeight - 1);
     const next = Math.min(3, Math.floor(progress * 4));
     if (next !== stage) {
       stage = next;
@@ -171,6 +180,32 @@
   const regionName = (id) => data?.regions.find((r) => r.id === id)?.name ?? id;
   const fc = (list) => ({ type: 'FeatureCollection', features: list });
 
+  // The same record, its figures re-added for the selected flat sizes only.
+  // d.bhk[size] = [flats, unsold, priced flats, sum of their price per sq ft, projects];
+  // d.bhk_projects[mask] = projects offering exactly that mix of sizes.
+  function sized(d) {
+    if (!filtered || !d) return d;
+    const b = d.bhk ?? {};
+    let flats = 0, unsold = 0, priced = 0, sum = 0;
+    for (const k of sizes) { const r = b[k]; if (r) { flats += r[0]; unsold += r[1]; priced += r[2]; sum += r[3]; } }
+    const ppsf = priced ? sum / priced : null;
+    const rate = data?.inr_per_usd ?? 88;
+    const out = { ...d, units_total: flats, units_unsold: unsold, price_per_sqft: ppsf ? { inr: ppsf, usd: ppsf / rate } : null, sized: true };
+    if (d.bhk_projects) {
+      const sel = sizes.reduce((m, k) => m | (1 << (Number(k) - 1)), 0);
+      out.projects = Object.entries(d.bhk_projects).reduce((n, [mask, c]) => n + ((Number(mask) & sel) ? c : 0), 0);
+    } else out.projects = flats ? 1 : 0;
+    // the (sample) trend is scaled to end at the filtered price, so the card's line and number agree
+    const was = d.price_per_sqft?.inr;
+    if (d.trend?.price_per_sqft && was && ppsf) out.trend = { ...d.trend, price_per_sqft: d.trend.price_per_sqft.map((v) => (v * ppsf) / was) };
+    return out;
+  }
+  // Rows for a level as the map shows them: sized, and for projects only those with the chosen sizes.
+  const rowsOf = (kind) => {
+    const rows = data[PLURAL[kind]].map(sized);
+    return kind === 'project' && filtered ? rows.filter((d) => d.units_total > 0) : rows;
+  };
+
   function metricValue(d) {
     if (metric === 'price') return d.price_per_sqft?.inr ?? null;
     if (metric === 'momentum') return d.trend?.price_qoq_pct ?? null;
@@ -186,7 +221,7 @@
   }
 
   function features(kind) {
-    const rows = data[PLURAL[kind]];
+    const rows = rowsOf(kind);
     const r = kind === 'project' ? null : ranks(rows.filter((d) => d.projects));
     if (kind === 'pincode') scale = { lo: r.lo, hi: r.hi };
     return rows.map((d) => {
@@ -195,7 +230,7 @@
       if (kind === 'project') {
         Object.assign(props, {
           l1: (d.name ?? '').length > 26 ? `${d.name.slice(0, 25)}…` : d.name,
-          l2: priceOf(d) ? `${priceOf(d)}/sqft` : d.units_total ? `${num(d.units_total)} flats` : '',
+          l2: priceOf(d) ? `${priceOf(d)}/sqft` : d.units_total ? `${num(d.units_total)} ${d.units_total === 1 ? 'flat' : 'flats'}` : '',
           l3: '', up: 1,
           colour: C.schedule[d.schedule] ?? '#9aa3b5', units: d.units_total ?? 0,
         });
@@ -516,15 +551,17 @@
         const f = pickTop(e.features, layer);
         if (!f) return;
         map.getCanvas().style.cursor = 'pointer';
+        keepCard();
+        stopOrbit();
+        // the card stays where it opened, so the pointer can travel into it and use its link
+        if (hovered?.kind === f.properties.kind && hovered?.data?.id === f.properties.id) return;
         setHover(source, f.properties.id);
         pointer = e.point;
         hovered = recordOf(f.properties.kind, f.properties.id);
-        stopOrbit();
       });
       map.on('mouseleave', layer, () => {
         map.getCanvas().style.cursor = '';
-        setHover(null);
-        hovered = null;
+        dropCard();
       });
       map.on('click', layer, (e) => {
         if (levelOf(map.getZoom()) !== levelOfLayer(layer)) return;
@@ -539,6 +576,14 @@
         }
       });
     }
+  }
+  // A hover card lingers briefly after the pointer leaves its feature, and stays while the pointer is on it.
+  let cardTimer = 0;
+  function keepCard() { clearTimeout(cardTimer); }
+  function dropCard(now = false) {
+    clearTimeout(cardTimer);
+    const go = () => { setHover(null); hovered = null; };
+    if (now) go(); else cardTimer = setTimeout(go, 380);
   }
   const levelOfLayer = (layer) => ({ 'region-dot': 0, 'zone-fill': 1, columns: 2, 'project-towers': 3, 'project-dot': 3 })[layer];
 
@@ -559,12 +604,12 @@
   }
 
   function recordOf(kind, id) {
-    const d = byId.get(`${kind}:${id}`);
+    const d = sized(byId.get(`${kind}:${id}`));
     if (!d) return null;
     if (kind === 'region') return { kind, data: d, title: d.name, sub: d.state };
     if (kind === 'zone') return { kind, data: d, title: `${d.name} zone`, sub: regionName(d.region_id) };
     if (kind === 'pincode') return { kind, data: d, title: `${d.id}${d.area ? ` · ${d.area}` : ''}`, sub: regionName(d.region_id) };
-    return { kind, data: d, title: d.name, sub: d.locality ?? d.pincode, context: byId.get(`pincode:${d.pincode}`) };
+    return { kind, data: d, title: d.name, sub: d.locality ?? d.pincode, context: sized(byId.get(`pincode:${d.pincode}`)) };
   }
 
   // Re-colour for a new metric or currency without rebuilding the layers.
@@ -578,6 +623,8 @@
     map.getSource('project-towers')?.setData(towers());
     map.getSource('outlines')?.setData(outlines());
     map.getSource('projects')?.setData(fc(features('project')));
+    if (selected) selected = recordOf(selected.kind, selected.data.id);
+    if (hovered) hovered = recordOf(hovered.kind, hovered.data.id);
   }
 
   // Projects come from the server for the area in view, so the page never downloads the whole
@@ -617,7 +664,7 @@
     const kind = LEVELS[levelOf(zoom)].id;
     if (picked && selected?.kind === kind) return;
     picked = false;
-    const rows = data[PLURAL[kind]].filter((d) => kind === 'project' || d.projects);
+    const rows = rowsOf(kind).filter((d) => kind === 'project' || d.projects);
     const c = map.getCenter();
     let best = null;
     for (const d of rows) {
@@ -669,7 +716,7 @@
   // The open part of the map, between the floating panels, so the camera frames what matters there.
   function room() {
     const w = stageEl?.clientWidth ?? window.innerWidth, h = stageEl?.clientHeight ?? window.innerHeight;
-    if (w < 960) return { top: 170, bottom: Math.min(240, Math.round(h * 0.3)), left: 70, right: 70 };
+    if (w < 960) return { top: 110, bottom: 130, left: 40, right: 40 };
     return { top: 110, bottom: 60, left: Math.min(440, w * 0.3), right: Math.min(420, w * 0.3) };
   }
 
@@ -733,6 +780,17 @@
     map?.easeTo(pitched ? { pitch: 0, bearing: 0, duration: 700 } : { pitch: 55, bearing: map.getBearing() - 20, duration: 700 });
   }
 
+  // Swipe the sheet up to open it, down to close it; a tap toggles it (handled by the click).
+  let swipeY = 0, swiped = false;
+  function swipeStart(e) { swipeY = e.clientY; swiped = false; }
+  function swipeEnd(e) {
+    const dy = e.clientY - swipeY;
+    if (Math.abs(dy) < 24) return;
+    swiped = true;
+    expanded = dy < 0;
+    setTimeout(() => (swiped = false), 50);
+  }
+
   // Beside the pointer, flipped to whichever side has room.
   const cardStyle = $derived.by(() => {
     if (!hovered || !pointer || !stageEl) return '';
@@ -770,7 +828,7 @@
       </ul>
       <div class="quest__foot">
         <button type="button" class="btn btn--small" aria-pressed={free} onclick={() => setFree(!free)}>
-          {free ? 'Back to the tour' : 'Explore freely'}
+          {free ? (narrow ? 'Tour' : 'Back to the tour') : narrow ? 'Explore' : 'Explore freely'}
         </button>
         <div class="levels" role="group" aria-label="Currency">
           <button type="button" class="key" class:key--on={currency === 'inr'} aria-pressed={currency === 'inr'} onclick={() => (currency = 'inr')}>₹</button>
@@ -803,6 +861,15 @@
           <li><i style:background={P.schedule.completed}></i>Completed</li>
         </ul>
       {/if}
+      <div class="sizes" role="group" aria-label="Flat sizes shown">
+        <p class="sizes__label">Flat size {#if filtered}<button type="button" class="sizes__all" onclick={() => (sizePicks = [])}>Show all</button>{/if}</p>
+        <div class="sizes__chips">
+          {#each BHKS as b (b.id)}
+            <button type="button" class="chiptog" class:is-on={sizePicks.includes(b.id) && filtered} aria-pressed={sizePicks.includes(b.id) && filtered} onclick={() => toggleSize(b.id)}>{b.name}</button>
+          {/each}
+        </div>
+        {#if filtered}<p class="sizes__note">Sizes are estimated from carpet area. Projects that filed no flat sizes are hidden.</p>{/if}
+      </div>
       <p class="mapkey__zoom num">zoom {zoom.toFixed(1)}</p>
     </div>
 
@@ -819,17 +886,35 @@
     {/if}
 
     {#if hovered}
-      <div class="quest__card is-hover" style={cardStyle} bind:clientHeight={cardH}>
-        <InsightCard record={hovered} quarters={data?.quarters} {currency} />
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div class="quest__card is-hover" style={cardStyle} bind:clientHeight={cardH} onmouseenter={keepCard} onmouseleave={() => dropCard()}>
+        <InsightCard record={hovered} quarters={data?.quarters} {currency} {sizes} />
       </div>
     {:else if selected}
       <div class="quest__card" class:is-sheet={narrow} class:is-open={narrow && expanded}>
         {#if narrow}
-          <button type="button" class="sheet__handle" aria-expanded={expanded} onclick={() => (expanded = !expanded)}>
-            <span aria-hidden="true"></span>{expanded ? 'Show less' : 'Show all insights'}
+          <!-- The phone sheet: a one-line peek over the map; swipe up or tap for everything. -->
+          <button type="button" class="sheet__handle" aria-expanded={expanded} aria-label={expanded ? 'Show less' : 'Show all details'}
+            onpointerdown={swipeStart} onpointerup={swipeEnd} onclick={() => { if (!swiped) expanded = !expanded; }}>
+            <span class="sheet__grip" aria-hidden="true"></span>
+            {#if level < 3}
+              <span class="sheet__scale" aria-hidden="true"><span class="num">{scale.lo}</span><i style:background="linear-gradient(90deg, {P.ramp.join(', ')})"></i><span class="num">{scale.hi}</span></span>
+            {:else}
+              <span class="sheet__dots" aria-hidden="true"><i style:background={P.schedule.on_time}></i>On time<i style:background={P.schedule.late}></i>Late<i style:background={P.schedule.completed}></i>Done</span>
+            {/if}
+            <span class="sheet__more">{expanded ? 'Less' : 'Details'}<span aria-hidden="true">{expanded ? ' ▾' : ' ▴'}</span></span>
           </button>
+          {#if expanded}
+            <InsightCard record={selected} quarters={data?.quarters} {currency} {sizes} />
+          {:else}
+            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+            <div class="sheet__peek" onpointerdown={swipeStart} onpointerup={swipeEnd} onclick={(e) => { if (!swiped && !e.target.closest('a')) expanded = true; }}>
+              <InsightCard record={selected} quarters={data?.quarters} {currency} {sizes} peek />
+            </div>
+          {/if}
+        {:else}
+          <InsightCard record={selected} quarters={data?.quarters} {currency} {sizes} />
         {/if}
-        <InsightCard record={selected} quarters={data?.quarters} {currency} compact={narrow && !expanded} />
       </div>
     {/if}
   </div>

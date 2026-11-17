@@ -52,7 +52,7 @@
     <p class="splash__word" class:is-settled={settled} aria-label="Subak">
       {#each LETTERS as letter, i (letter)}<span class="glitch" class:is-off={!lit.includes(i)} data-text={letter} aria-hidden="true">{letter}</span>{/each}
     </p>
-    <p class="splash__sub">Business Intelligence Network</p>
+    <p class="splash__sub">Market Watch</p>
     <button type="button" class="splash__skip" onclick={close}>Skip</button>
   </div>
 {/if}

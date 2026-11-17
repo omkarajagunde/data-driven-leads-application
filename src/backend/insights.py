@@ -19,6 +19,62 @@ import metrics as m
 
 QUARTERS = 8
 
+# RERA files each flat's carpet area but not its type, so BHK is estimated from size with the
+# carpet-area ranges usual in Pune and Mumbai. Flats with no area filed are left out.
+BHK_CASE = """CASE WHEN u.carpet_area_sqft < 550 THEN '1' WHEN u.carpet_area_sqft < 850 THEN '2'
+                   WHEN u.carpet_area_sqft < 1250 THEN '3' ELSE '4' END"""
+BHK_KEYS = ("1", "2", "3", "4")
+
+
+def bhk_rows(con, by: str, where: str = "", params: tuple = ()) -> dict:
+    """{key: {bhk: [flats, unsold, priced flats, sum of their price per sq ft, projects]}} grouped by `by`.
+    The price sum and count travel separately so the map can weight any mix of BHKs exactly."""
+    out: dict = {}
+    for r in con.execute(f"""
+            SELECT {by} AS key, {BHK_CASE} AS bhk, count(*) AS flats,
+                   count(*) FILTER (WHERE u.status = 'unsold') AS unsold,
+                   count(*) FILTER (WHERE u.price_per_sqft > 0) AS priced,
+                   coalesce(sum(u.price_per_sqft) FILTER (WHERE u.price_per_sqft > 0), 0) AS ppsf_sum,
+                   count(DISTINCT u.project_id) AS projects
+            FROM units u JOIN projects p ON p.project_id = u.project_id
+            WHERE u.carpet_area_sqft > 0 {where}
+            GROUP BY 1, 2""", params):
+        out.setdefault(r["key"], {})[r["bhk"]] = [r["flats"], r["unsold"], r["priced"], round(float(r["ppsf_sum"])), r["projects"]]
+    return out
+
+
+def bhk_masks(con) -> dict:
+    """{pincode: {mask: projects}}: which mix of BHKs each project offers (bit 0 = 1 BHK ... bit 3 = 4+),
+    so the map can count projects for any selection without counting one project twice."""
+    out: dict = {}
+    for r in con.execute(f"""
+            WITH m AS (
+                SELECT p.pincode, u.project_id, bit_or(1 << (({BHK_CASE})::int - 1)) AS mask
+                FROM units u JOIN projects p ON p.project_id = u.project_id
+                WHERE u.carpet_area_sqft > 0 GROUP BY 1, 2)
+            SELECT pincode, mask, count(*) AS n FROM m GROUP BY 1, 2"""):
+        out.setdefault(r["pincode"], {})[str(r["mask"])] = r["n"]
+    return out
+
+
+def mask_sum(parts: list[dict]) -> dict:
+    out: dict = {}
+    for part in parts:
+        for k, n in (part or {}).items():
+            out[k] = out.get(k, 0) + n
+    return out
+
+
+def bhk_sum(parts: list[dict]) -> dict:
+    """Add pincode BHK figures up to a zone or region (a project spanning sizes counts once per size)."""
+    out: dict = {}
+    for part in parts:
+        for k, row in (part or {}).items():
+            acc = out.setdefault(k, [0, 0, 0, 0, 0])
+            for i, v in enumerate(row):
+                acc[i] += v
+    return out
+
 
 def quarter_labels(today: date | None = None) -> list[str]:
     today = today or date.today()
@@ -98,6 +154,9 @@ def build(con) -> dict:
         SELECT pincode, count(*) AS n FROM projects
         WHERE coalesce(schedule_status, '') <> 'completed' GROUP BY pincode""")}
 
+    pin_bhk = bhk_rows(con, "p.pincode")
+    pin_mask = bhk_masks(con)
+
     outline = {r["pincode"]: r["geometry"] for r in con.execute("SELECT pincode, geometry FROM pincode_boundaries")}
     zone_outline = {(r["region_id"], r["zone_id"]): r for r in con.execute(
         "SELECT region_id, zone_id, geometry, source FROM zone_boundaries")}
@@ -122,6 +181,7 @@ def build(con) -> dict:
             "under_construction": building.get(r["pincode"], 0),
             "size_mix": mix, "top_size": top["label"] if top else None,
             "top_builders": builders.get(r["pincode"], []),
+            "bhk": pin_bhk.get(r["pincode"], {}), "bhk_projects": pin_mask.get(r["pincode"], {}),
             "boundary": outline.get(r["pincode"]),  # real postal outline, or null until loaded
         })
 
@@ -142,6 +202,7 @@ def build(con) -> dict:
                               "price_per_sqft": p["price_per_sqft"]} for p in hot],
             "boundary": (zone_outline.get((r["region_id"], r["zone_id"])) or {}).get("geometry"),
             "boundary_estimated": (zone_outline.get((r["region_id"], r["zone_id"])) or {}).get("source") == "estimated",
+            "bhk": bhk_sum([p["bhk"] for p in own]), "bhk_projects": mask_sum([p["bhk_projects"] for p in own]),
         })
 
     regions = []
@@ -157,6 +218,7 @@ def build(con) -> dict:
             **headline(x, f"region:{r['region_id']}"),
             "zones_by_price": [{"name": z["name"], "price_per_sqft": z["price_per_sqft"],
                                 "qoq_pct": z["trend"]["price_qoq_pct"]} for z in priced],
+            "bhk": bhk_sum([z["bhk"] for z in own]), "bhk_projects": mask_sum([z["bhk_projects"] for z in own]),
         })
 
     totals = con.execute("""
@@ -168,7 +230,8 @@ def build(con) -> dict:
                (SELECT count(*) FROM pincodes)                              AS pincodes""").fetchone()
     totals["agreed_inr"] = float(totals["agreed_inr"])
 
-    return {"quarters": quarter_labels(), "sample_trends": True, "totals": totals,
+    return {"quarters": quarter_labels(), "sample_trends": True, "totals": totals, "inr_per_usd": rate,
+            "bhk_ranges": {"1": [0, 550], "2": [550, 850], "3": [850, 1250], "4": [1250, None]},
             "regions": regions, "zones": zones, "pincodes": pincodes}
 
 
@@ -190,7 +253,8 @@ def cached(con) -> dict:
 PROJECT_SQL = """
     SELECT p.rera_id, p.project_name, p.developer_name, p.pincode, p.locality, p.latitude, p.longitude,
            p.schedule_status, p.work_done_percent, p.total_units, p.sold_units, p.booked_units,
-           p.price_per_sqft, p.complaint_count, p.pending_litigation_count, p.revised_completion_date
+           p.price_per_sqft, p.complaint_count, p.pending_litigation_count, p.revised_completion_date,
+           p.project_id, p.rera_authority, p.source_url
     FROM projects p JOIN pincodes pc ON pc.pincode = p.pincode
     WHERE p.latitude BETWEEN %s AND %s AND p.longitude BETWEEN %s AND %s
     ORDER BY p.total_units DESC NULLS LAST
@@ -201,6 +265,8 @@ def projects_in(con, south: float, west: float, north: float, east: float, limit
     """The projects inside a map view, biggest first; the map asks for these only when zoomed in."""
     rate = m.usd_rate(con)
     rows = con.execute(PROJECT_SQL, (south, north, west, east, limit + 1)).fetchall()
+    ids = [r["project_id"] for r in rows[:limit]]
+    sizes = bhk_rows(con, "u.project_id", "AND u.project_id = ANY(%s)", (ids,)) if ids else {}
     out = [{
         "id": r["rera_id"], "name": r["project_name"] or r["rera_id"], "builder": r["developer_name"],
         "pincode": r["pincode"], "locality": r["locality"],
@@ -212,6 +278,8 @@ def projects_in(con, south: float, west: float, north: float, east: float, limit
         "price_per_sqft": m.money(r["price_per_sqft"], rate) if r["price_per_sqft"] else None,
         "complaints": r["complaint_count"], "court_cases": r["pending_litigation_count"],
         "possession": r["revised_completion_date"].isoformat() if r["revised_completion_date"] else None,
+        "authority": r["rera_authority"], "url": r["source_url"],
+        "bhk": sizes.get(r["project_id"], {}),
     } for r in rows[:limit]]
     return {"projects": out, "truncated": len(rows) > limit}
 

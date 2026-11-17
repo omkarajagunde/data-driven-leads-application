@@ -45,7 +45,7 @@
 
 <header class="nav">
   <nav class="nav__pill" aria-label="Main">
-    <a class="nav__mark" href="#top" aria-label="Subak Market Intelligence"><span class="nav__dot" aria-hidden="true"></span>Subak<span class="nav__tag">Market Intelligence</span></a>
+    <a class="nav__mark" href="#top" aria-label="Subak Market Watch"><span class="nav__dot" aria-hidden="true"></span>Subak<span class="nav__tag">Market Watch</span></a>
     <a class="nav__link" href="#map">The map</a>
     <a class="nav__link" href="#pricing">Pricing</a>
     <div class="display" bind:this={displayEl}>
