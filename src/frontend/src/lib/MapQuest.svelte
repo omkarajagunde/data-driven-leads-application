@@ -120,7 +120,58 @@
   const savedDock = (() => { try { return JSON.parse(localStorage.getItem(DOCK_KEY)) || {}; } catch { return {}; } })();
   let dockOpen = $state(savedDock.open ?? true);
   let secs = $state({ legend: true, filters: true, details: true, ...savedDock.secs });
-  $effect(() => { const v = JSON.stringify({ open: dockOpen, secs }); try { localStorage.setItem(DOCK_KEY, v); } catch {} });
+  let dockPos = $state(savedDock.pos ?? null); // null: its usual place, top right
+  $effect(() => { const v = JSON.stringify({ open: dockOpen, secs, pos: dockPos }); try { localStorage.setItem(DOCK_KEY, v); } catch {} });
+
+  // Dragging the panel by its bar. A drag of a few pixels or more is a move, not a click.
+  let dockEl = $state();
+  let drag = null, dragged = false;
+  function dragStart(e) {
+    if (e.button !== 0 || !dockEl || !stageEl) return;
+    const r = dockEl.getBoundingClientRect();
+    drag = { dx: e.clientX - r.left, dy: e.clientY - r.top, x0: e.clientX, y0: e.clientY };
+    dragged = false;
+    // followed on the window, so a quick drag that leaves the bar still moves the panel
+    window.addEventListener('pointermove', dragMove);
+    window.addEventListener('pointerup', dragEnd, { once: true });
+    window.addEventListener('pointercancel', dragEnd, { once: true });
+  }
+  function dragMove(e) {
+    if (!drag) return;
+    if (!dragged) {
+      if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 4) return;
+      dragged = true;
+    }
+    const st = stageEl.getBoundingClientRect();
+    dockPos = clampDock(e.clientX - st.left - drag.dx, e.clientY - st.top - drag.dy);
+  }
+  function dragEnd() {
+    drag = null;
+    window.removeEventListener('pointermove', dragMove);
+    window.removeEventListener('pointerup', dragEnd);
+    window.removeEventListener('pointercancel', dragEnd);
+  }
+  // Keep at least the bar on screen, whatever the window does.
+  function clampDock(x, y) {
+    const w = dockEl?.offsetWidth ?? 340, W = stageEl.clientWidth, H = stageEl.clientHeight;
+    return { x: Math.round(clamp(x, 8, Math.max(8, W - w - 8))), y: Math.round(clamp(y, 8, Math.max(8, H - 56))) };
+  }
+  $effect(() => {
+    const fit = () => { if (dockPos && stageEl) dockPos = clampDock(dockPos.x, dockPos.y); };
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  });
+
+  // What to do next, so it is clear the card follows the map.
+  let touch = $state(false);
+  const hint = $derived.by(() => {
+    if (hovered) return 'Showing what is under the pointer. Move away to go back.';
+    const act = touch ? 'Tap' : 'Hover';
+    if (level === 0) return `${act} a city to see it here. Scroll down or zoom in to go deeper.`;
+    if (level === 1) return `${act} a zone to see it here. Scroll down or zoom in for pincodes.`;
+    if (level === 2) return `${act} a pincode tower to see it here. Scroll down or zoom in for projects.`;
+    return `${act} a building to see the project here. Click to keep it.`;
+  });
   const activeFilters = $derived((filtered ? 1 : 0) + (since ? 1 : 0) + (statusPicks.length ? 1 : 0));
   function toggleStatus(id) { statusPicks = statusPicks.includes(id) ? statusPicks.filter((x) => x !== id) : [...statusPicks, id].sort(); }
 
@@ -406,6 +457,7 @@
     // Bundled, the worker no longer sits next to the library, so say where Vite put it.
     maplibre.setWorkerUrl((await import('maplibre-gl/dist/maplibre-gl-worker.mjs?url')).default);
     canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+    touch = !canHover;
     const small = window.matchMedia('(max-width: 60rem)');
     narrow = small.matches;
     if (!watching) { watching = true; small.addEventListener('change', (e) => (narrow = e.matches)); }
@@ -994,14 +1046,37 @@
         {/if}
     {:else}
       <!-- Desktop: one panel for the key, the filters and the details, scrolling on its own. -->
-      <aside class="dock" class:is-closed={!dockOpen} aria-label="Map key, filters and details">
-        <button type="button" class="dock__bar" aria-expanded={dockOpen} onclick={() => (dockOpen = !dockOpen)}>
+      <aside class="dock" class:is-moved={dockPos} bind:this={dockEl} aria-label="Map details, key and filters"
+        style={dockPos ? `left:${dockPos.x}px;top:${dockPos.y}px;right:auto;--dock-top:${dockPos.y}px` : ''}>
+        <!-- The bar moves the panel: drag it anywhere on the map; double-click puts it back. -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="dock__bar" title="Drag to move · double-click to put back"
+          onpointerdown={dragStart}
+          onclickcapture={(e) => { if (dragged) { e.stopPropagation(); e.preventDefault(); dragged = false; } }}
+          ondblclick={(e) => { if (!e.target.closest('button')) dockPos = null; }}>
+          <span class="dock__grip" aria-hidden="true"></span>
           <span class="dock__title">Map panel</span>
           {#if activeFilters}<span class="dock__badge num">{activeFilters} filter{activeFilters > 1 ? 's' : ''} on</span>{/if}
-          <span class="dock__chev" aria-hidden="true"></span>
-        </button>
+          <button type="button" class="dock__fold" aria-expanded={dockOpen} aria-label={dockOpen ? 'Fold the panel' : 'Open the panel'} onclick={() => (dockOpen = !dockOpen)}>
+            <span class="dock__chev" aria-hidden="true"></span>
+          </button>
+        </div>
         {#if dockOpen}
           <div class="dock__body">
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <section class="dock__sec dock__sec--details" onmouseenter={keepCard} onmouseleave={() => { if (hovered) dropCard(); }}>
+              <button type="button" class="dock__head" aria-expanded={secs.details} onclick={() => (secs.details = !secs.details)}>
+                <span>Details</span><span class="dock__chev" aria-hidden="true"></span>
+              </button>
+              {#if secs.details}
+                <div class="dock__content">
+                  <p class="dock__hint" class:is-live={hovered} aria-live="polite"><i aria-hidden="true"></i>{hint}</p>
+                  {#if hovered || selected}
+                    <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} />
+                  {/if}
+                </div>
+              {/if}
+            </section>
             <section class="dock__sec">
               <button type="button" class="dock__head" aria-expanded={secs.legend} onclick={() => (secs.legend = !secs.legend)}>
                 {level < 3 ? 'Colour' : 'Legend'}<span class="dock__chev" aria-hidden="true"></span>
@@ -1014,23 +1089,18 @@
               </button>
               {#if secs.filters}<div class="dock__content">{@render filters()}</div>{/if}
             </section>
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <section class="dock__sec" onmouseenter={keepCard} onmouseleave={() => { if (hovered) dropCard(); }}>
-              <button type="button" class="dock__head" aria-expanded={secs.details} onclick={() => (secs.details = !secs.details)}>
-                <span>Details{#if hovered}<span class="dock__live">under the pointer</span>{/if}</span><span class="dock__chev" aria-hidden="true"></span>
-              </button>
-              {#if secs.details}
-                <div class="dock__content">
-                  {#if hovered || selected}
-                    <InsightCard record={hovered ?? selected} quarters={data?.quarters} {currency} {sizes} />
-                  {:else}
-                    <p class="dock__empty">Point at the map, or click a place, to see its figures here.</p>
-                  {/if}
-                </div>
-              {/if}
-            </section>
             <p class="mapkey__zoom num">zoom {zoom.toFixed(1)}</p>
           </div>
+        {:else if hovered}
+          <!-- Folded, the panel still shows what is under the pointer, and folds back when it leaves. -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div class="dock__body dock__body--peek" onmouseenter={keepCard} onmouseleave={() => dropCard()}>
+            <div class="dock__content">
+              <InsightCard record={hovered} quarters={data?.quarters} {currency} {sizes} />
+            </div>
+          </div>
+        {:else}
+          <p class="dock__folded">{touch ? 'Tap' : 'Hover'} the map to see details here.</p>
         {/if}
       </aside>
     {/if}
